@@ -151,7 +151,9 @@ main :: proc() {
             // gameCode.gameLoad(&engineData)
             if res {
                 gameCode.setStatePointers(&engineData)
-                gameCode.gameHotReloaded(engineData.gameState)
+                if gameCode.gameHotReloaded != nil {
+                    gameCode.gameHotReloaded(engineData.gameState)
+                }
             }
         }
 
