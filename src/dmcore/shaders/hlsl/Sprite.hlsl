@@ -38,19 +38,20 @@ SamplerState texSampler : register(s0);
 pixel vs_main(uint spriteId: SV_INSTANCEID, uint vertexId : SV_VERTEXID) {
     sprite sp = spriteBuffer[spriteId];
 
-    float2 anchor = sp.pivot * sp.size;
-    anchor = float2(-anchor.x, anchor.y);
-    float4 pos = float4(anchor, anchor + float2(sp.size.x, -sp.size.y));
-    float4 tex = float4(sp.texPos + 0.5, sp.texPos + sp.texSize - 0.5);
-
     uint2 i = { vertexId & 2, (vertexId << 1 & 2) ^ 3 };
+
+    float2 anchor = sp.pivot * sp.size;
+
+    float4 pos = float4(-anchor.x, anchor.y, -anchor.x + sp.size.x, anchor.y - sp.size.y);
+    float4 tex = float4(sp.texPos + 0.5, sp.texPos + sp.texSize - 0.5);
 
     pixel p;
 
     float2x2 rot = float2x2(cos(sp.rotation), -sin(sp.rotation), 
                             sin(sp.rotation), cos(sp.rotation));
+    
     float2 tp = mul(rot, float2(pos[i.x], pos[i.y])) + sp.pos;
-
+    
     p.pos = mul(VPMat, float4(tp, 0, 1));
     p.pos.xyz /= p.pos.w;
     // p.uv  = float2(tex[i.x], tex[i.y]) * oneOverAtlasSize;
