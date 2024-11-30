@@ -248,11 +248,15 @@ FlushCommands :: proc(using ctx: ^RenderContext) {
             AddBatchEntry(ctx, &ctx.defaultBatch, entry)
 
         case DrawGridCommand:
+            DrawBatch(ctx, &ctx.defaultBatch)
+
             shaderHandle := ctx.defaultShaders[.Grid]
             shader := GetElement(ctx.shaders, shaderHandle)
 
             ctx.deviceContext->VSSetShader(shader.backend.vertexShader, nil, 0)
             ctx.deviceContext->PSSetShader(shader.backend.pixelShader, nil, 0)
+
+            ctx.deviceContext->IASetPrimitiveTopology(.TRIANGLESTRIP)
 
             ctx.deviceContext->Draw(4, 0)
 
