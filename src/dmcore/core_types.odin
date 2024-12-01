@@ -82,6 +82,10 @@ CreateRay2D :: proc(pos: v2, dir: v2) -> Ray2D {
     }
 }
 
+PointAtRay :: proc(ray: Ray2D, dist: f32) -> v2 {
+    return ray.origin + ray.direction * dist
+}
+
 Ray2DFromTwoPoints :: proc(a, b: v2) -> Ray2D {
     delta := math.normalize(b - a)
     return {

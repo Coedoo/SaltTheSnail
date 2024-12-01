@@ -124,12 +124,6 @@ ControlCamera :: proc(camera: ^Camera) {
     camera.position += {horizontal, -vertical, 0} * f32(time.deltaTime)
 }
 
-IsPointInCamera :: proc(point: v3) -> bool {
-    return (point.x >= -1 && point.x <= 1) &&
-           (point.y >= -1 && point.y <= 1) &&
-           (point.z >= -1 && point.z <= 1)
-}
-
 IsInsideCamera :: proc {
     IsInsideCamera_Rect,
     IsInsideCamera_Sprite,
@@ -147,11 +141,17 @@ IsInsideCamera_Rect :: proc(camera: Camera, rect: Rect) -> bool {
     dc := WorldToClipSpace(camera, ToV3(d))
 
     // fmt.println(ac, bc, cc, dc)
+    
+    IsInRange :: #force_inline proc(point: v3) -> bool {
+        return (point.x >= -1 && point.x <= 1) &&
+               (point.y >= -1 && point.y <= 1) &&
+               (point.z >= -1 && point.z <= 1)
+    }
 
-    return IsPointInCamera(ac) ||
-           IsPointInCamera(bc) ||
-           IsPointInCamera(cc) ||
-           IsPointInCamera(dc)
+    return IsInRange(ac) ||
+           IsInRange(bc) ||
+           IsInRange(cc) ||
+           IsInRange(dc)
 }
 
 IsInsideCamera_Sprite :: proc(camera: Camera, position: v2, sprite: Sprite) -> bool {
