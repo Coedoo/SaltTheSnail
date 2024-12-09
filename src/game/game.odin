@@ -18,13 +18,15 @@ iv2 :: dm.iv2
 windowSize :: iv2{800, 900}
 
 GameState :: struct {
-    gameBoardSprite: dm.Sprite,
+    bgSprite: dm.Sprite,
     mollySprite: dm.Sprite,
     mollyHandsSprite: dm.Sprite,
     holeSprite: dm.Sprite,
     saltSprite: dm.Sprite,
     btnSprite: dm.Sprite,
     btnPressedSprite: dm.Sprite,
+
+    font: dm.Font,
 
     newActiveTimer: f32,
 
@@ -37,11 +39,13 @@ GameState :: struct {
 }
 gameState: ^GameState
 
-GameTime :: 80
+GameTime :: 60
 
 HoleSize :: v2{1, 1}
 HoleColliderOffset :: v2{0, -0.17}
-HolesCount :: 3
+HolesCount :: 7
+
+BaseSpawnTime :: 1
 
 HoleState :: enum {
     Dormant,
@@ -61,15 +65,21 @@ HoleData :: struct {
 
 HolePositions := [HolesCount]v2{
     {0, 0},
-    {1, -1},
-    {-1, -1},
+    { 1.5, -0.2},
+    {-1.5, -0.2},
+
+    {0, -1.2},
+    { 2.2, -2.3},
+    {-2.2, -2.3},
+
+    {0, -2.8},
 }
 
 
 BaseStateTimes := [HoleState]f32 {
     .Dormant = 0,
-    .Showing = 1,
-    .Active = 300,
+    .Showing = .7,
+    .Active = 2.5,
     .Hit = 0.2,
     .Hiding = 0.1,
 }
@@ -87,9 +97,17 @@ SaltData :: struct {
     rotationSpeed: f32,
 }
 
+StartButtonPos :: v2{-2, -4.3}
+ResetButtonPos :: v2{2, -4.3}
+
 @export
 PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
+    dm.RegisterAsset("background.png", dm.TextureAssetDescriptor{})
     dm.RegisterAsset("assets.png", dm.TextureAssetDescriptor{})
+    // dm.RegisterAsset("Kenney Pixel.ttf", dm.FontAssetDescriptor{
+    //     fontType = .SDF,
+    //     fontSize = 20,
+    // })
 
     dm.platform.SetWindowSize(int(windowSize.x), int(windowSize.y))
 }
@@ -100,10 +118,11 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
 
     PixelsPerUnit :: 16
 
-    assetsTex := dm.GetTextureAsset("assets.png")
-    gameState.gameBoardSprite = dm.CreateSprite(assetsTex, dm.RectInt{0, 0, 8 * 16, 11 * 16})
-    gameState.gameBoardSprite.scale = f32(gameState.gameBoardSprite.textureSize.x) / PixelsPerUnit
+    bgTex := dm.GetTextureAsset("background.png")
+    gameState.bgSprite = dm.CreateSprite(bgTex)
+    gameState.bgSprite.scale = f32(gameState.bgSprite.textureSize.x) / PixelsPerUnit
 
+    assetsTex := dm.GetTextureAsset("assets.png")
     gameState.mollySprite = dm.CreateSprite(assetsTex, dm.RectInt{128, 32, 16, 16})
     gameState.mollySprite.origin = {0.5, 1}
 
@@ -120,33 +139,69 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     platform.renderCtx.camera.orthoSize = 5.5
     platform.renderCtx.camera.aspect = f32(windowSize.x)/f32(windowSize.y)
 
-    StartGame()
+    gameState.font = dm.LoadFontSDF(platform.renderCtx, "../Assets/Kenney Pixel.ttf", 50)
 }
 
 ResetGame :: proc() {
+    gameState.gameBegun = false
 
+    for &hole, i in gameState.holes {
+        hole.state = .Dormant
+    }
+
+    sa.clear(&gameState.salts)
 }
 
 StartGame :: proc() {
     gameState.gameBegun = true
     gameState.timeLeft = GameTime
+    gameState.score = 0
+}
+
+DifficultyCurve :: proc() -> f32{
+    maxPoint :: 0.9
+    maxValue :: 0.15
+    curv :: 1.5
+
+    t := 1 - (gameState.timeLeft / GameTime)
+
+    if t > maxPoint {
+        return maxValue
+    }
+
+    curvature: f32 = -(maxValue - 1) / math.pow(f32(maxPoint), curv)
+    return -curvature * math.pow(t, curv) + 1
 }
 
 SwitchHoleState :: proc(hole: ^HoleData, state: HoleState) {
     hole.state = state
     hole.stateTime = BaseStateTimes[state]
+
+    if state == .Showing || state == .Active {
+        hole.stateTime *= DifficultyCurve()
+    }
 }
 
 @(export)
 GameUpdate : dm.GameUpdate : proc(state: rawptr) {
     gameState = cast(^GameState) state
 
-    if gameState.gameBegun {
-        gameState.timeLeft -= dm.time.deltaTime
+    if gameState.gameBegun == false {
+        if dm.GetKeyState(.Space) == .JustPressed {
+            StartGame()
+        }
+
+        return
     }
 
+    if dm.GetKeyState(.Space) == .JustPressed {
+        ResetGame()
+    }
+
+    gameState.timeLeft -= dm.time.deltaTime
+
     gameState.newActiveTimer += dm.time.deltaTime
-    if gameState.newActiveTimer > 1 {
+    if gameState.newActiveTimer > BaseSpawnTime * DifficultyCurve() {
         gameState.newActiveTimer = 0
 
         randIdx := rand.uint32() % HolesCount
@@ -161,7 +216,6 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
         }
     }
 
-
     for &hole, i in gameState.holes {
         hole.stateTime -= dm.time.deltaTime
 
@@ -172,10 +226,10 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
             bounds := dm.CreateBounds(pos, HoleSize, anchor = {0.5, 0})
             isInBound := dm.IsInBounds(bounds, mouse.xy)
 
-            color := isInBound ? dm.RED : dm.GREEN
-            color.a = 0.2
+            // color := isInBound ? dm.RED : dm.GREEN
+            // color.a = 0.2
 
-            dm.DrawBounds2D(dm.renderCtx, bounds, false, color = color)
+            // dm.DrawBounds2D(dm.renderCtx, bounds, false, color = color)
 
             if isInBound && dm.GetMouseButton(.Left) == .JustPressed {
                 delta := mouse - HolePositions[i]
@@ -235,6 +289,9 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
 
                 hole := &gameState.holes[s.targetedHole]
                 hole.targeted = false
+
+                gameState.score += 10
+
                 SwitchHoleState(hole, .Hit)
             }
 
@@ -247,6 +304,11 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
                 sa.unordered_remove(&gameState.salts, i)
             }
         }
+    }
+
+    if gameState.timeLeft < 0 {
+        gameState.timeLeft = 0
+        ResetGame()
     }
 }
 
@@ -262,7 +324,7 @@ GameRender : dm.GameRender : proc(state: rawptr) {
     gameState = cast(^GameState) state
     dm.ClearColor({0.0/255.0, 24.0/255.0, 4.0/255.0, 1})
 
-    dm.DrawSprite(gameState.gameBoardSprite, {0, 0})
+    dm.DrawSprite(gameState.bgSprite, {0, 0})
 
     for &hole, i in gameState.holes {
         dm.DrawSprite(gameState.holeSprite, HolePositions[i])
@@ -273,11 +335,11 @@ GameRender : dm.GameRender : proc(state: rawptr) {
             color := dm.WHITE
 
             if hole.state == .Showing {
-                p := 1 - hole.stateTime / BaseStateTimes[hole.state]
+                p := 1 - hole.stateTime / (BaseStateTimes[hole.state] * DifficultyCurve())
                 sprite.textureSize.y = i32(min(1, p) * f32(sprite.textureSize.y))
             }
             else if hole.state == .Hiding {
-                p := hole.stateTime / BaseStateTimes[hole.state]
+                p := hole.stateTime / (BaseStateTimes[hole.state] * DifficultyCurve())
                 sprite.textureSize.y = i32(min(1, p) * f32(sprite.textureSize.y))
             }
             if hole.state == .Hit {
@@ -289,16 +351,16 @@ GameRender : dm.GameRender : proc(state: rawptr) {
         }
     }
 
-    dm.DrawSprite(gameState.btnSprite, {-2, -4.3})
-    dm.DrawSprite(gameState.btnSprite, {2, -4.3})
+    dm.DrawSprite(gameState.btnSprite, StartButtonPos)
+    dm.DrawSprite(gameState.btnSprite, ResetButtonPos)
 
-    dm.DrawTextCentered(dm.renderCtx, "999", dm.LoadDefaultFont(dm.renderCtx), {280, 280}, color = {1, 1, 1, 1}, fontSize = 70)
-    dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%.2f",gameState.timeLeft), dm.LoadDefaultFont(dm.renderCtx), {520, 280}, color = {1, 1, 1, 1}, fontSize = 70)
+    dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5v", gameState.score), gameState.font, {280, 280}, color = {1, 1, 1, 1}, fontSize = 70)
+    dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5.2f",gameState.timeLeft), gameState.font, {520, 280}, color = {1, 1, 1, 1}, fontSize = 70)
 
     for i in 0..<gameState.salts.len {
         s := &gameState.salts.data[i]
         dm.DrawSprite(gameState.saltSprite, s.position, rotation = s.rotation)
     }
 
-    dm.DrawGrid()
+    // dm.DrawGrid()
 }
