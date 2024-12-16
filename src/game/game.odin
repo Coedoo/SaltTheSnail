@@ -36,6 +36,9 @@ GameState :: struct {
     gameBegun: bool,
     score: int,
     timeLeft: f32,
+
+    pp1: dm.PPHandle,
+    ppData: PPData,
 }
 gameState: ^GameState
 
@@ -100,10 +103,18 @@ SaltData :: struct {
 StartButtonPos :: v2{-2, -4.3}
 ResetButtonPos :: v2{2, -4.3}
 
+PPData :: struct #align(16) {
+    brightness: f32,
+}
+
 @export
 PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
     dm.RegisterAsset("background.png", dm.TextureAssetDescriptor{})
     dm.RegisterAsset("assets.png", dm.TextureAssetDescriptor{})
+    dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{})
+    dm.RegisterAsset("Bloom1.hlsl", dm.ShaderAssetDescriptor{})
+    dm.RegisterAsset("Bloom2.hlsl", dm.ShaderAssetDescriptor{})
+    
     // dm.RegisterAsset("Kenney Pixel.ttf", dm.FontAssetDescriptor{
     //     fontType = .SDF,
     //     fontSize = 20,
@@ -140,6 +151,11 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     platform.renderCtx.camera.aspect = f32(windowSize.x)/f32(windowSize.y)
 
     gameState.font = dm.LoadFontSDF(platform.renderCtx, "../Assets/Kenney Pixel.ttf", 50)
+
+    gameState.ppData.brightness = 2
+    gameState.pp1 = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("PPEffect.hlsl"), gameState.ppData)
+    // pp2 := dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Bloom1.hlsl"))
+    // pp3 := dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Bloom2.hlsl"))
 }
 
 ResetGame :: proc() {
@@ -185,6 +201,14 @@ SwitchHoleState :: proc(hole: ^HoleData, state: HoleState) {
 @(export)
 GameUpdate : dm.GameUpdate : proc(state: rawptr) {
     gameState = cast(^GameState) state
+
+    if dm.muiBeginWindow(dm.mui, "PP", {10, 10, 100, 80}) {
+        if dm.muiSlider(dm.mui, &gameState.ppData.brightness, 0, 3) {
+            dm.PostProcessUpdateData(gameState.pp1)
+        }
+
+        dm.muiEndWindow(dm.mui);
+    }
 
     if gameState.gameBegun == false {
         if dm.GetKeyState(.Space) == .JustPressed {

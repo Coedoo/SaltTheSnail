@@ -24,6 +24,8 @@ RenderContext :: struct {
 
     textures: ResourcePool(Texture, TexHandle),
     shaders: ResourcePool(Shader, ShaderHandle),
+    buffers: ResourcePool(GPUBuffer, GPUBufferHandle),
+    postProcess: ResourcePool(PostProcess, PPHandle),
 
     defaultShaders: [DefaultShaderType]ShaderHandle,
 
@@ -49,6 +51,8 @@ InitRenderContext :: proc(ctx: ^RenderContext) -> ^RenderContext {
     //@TODO: How many textures do I need? Maybe make it dynamic?
     InitResourcePool(&ctx.textures, 128)
     InitResourcePool(&ctx.shaders, 64)
+    InitResourcePool(&ctx.buffers, 64)
+    InitResourcePool(&ctx.postProcess, 4)
 
     texData := []u8{255, 255, 255, 255}
     ctx.whiteTexture = CreateTexture(ctx, texData, 1, 1, 4, .Point)
@@ -61,6 +65,7 @@ InitRenderContext :: proc(ctx: ^RenderContext) -> ^RenderContext {
     ctx.debugBatch = CreatePrimitiveBatch(ctx, 4086, PrimitiveVertexShaderSource)
     ctx.debugBatchScreen = CreatePrimitiveBatch(ctx, 4086, PrimitiveVertexScreenShaderSource)
 
+    ctx.defaultShaders[.Blit] = CompileShaderSource(ctx, BlitShaderSource)
     ctx.defaultShaders[.ScreenSpaceRect] = CompileShaderSource(ctx, ScreenSpaceRectShaderSource)
     ctx.defaultShaders[.Sprite] = CompileShaderSource(ctx, SpriteShaderSource)
     ctx.defaultShaders[.SDFFont] = CompileShaderSource(ctx, SDFFontSource)

@@ -25,7 +25,6 @@ CompileShaderSource :: proc(renderCtx: ^RenderContext, source: string) -> Shader
 InitShaderSource :: proc(renderCtx: ^RenderContext, shader: ^Shader, source: string) -> bool {
     error: ^d3d11.IBlob
     vsBlob: ^d3d11.IBlob
-    defer vsBlob->Release()
 
     hr := d3d.Compile(raw_data(source), len(source), "shaders.hlsl", nil, nil, 
                       "vs_main", "vs_5_0", 0, 0, &vsBlob, &error)
@@ -55,7 +54,7 @@ InitShaderSource :: proc(renderCtx: ^RenderContext, shader: ^Shader, source: str
 
     renderCtx.device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), 
                                         nil, &shader.backend.pixelShader)
-
+    vsBlob->Release()
     return true
 }
 

@@ -42,7 +42,7 @@ SetWindowSize :: proc(width, height: int) {
     sdl.SetWindowPosition(window, pos.x - delta.x, pos.y - delta.y)
 
     sdl.SetWindowSize(window, i32(width), i32(height))
-    dm.ResizeFrambuffer(engineData.renderCtx, width, height)
+    dm.ResizeFramebuffer(engineData.renderCtx, width, height)
 }
 
 main :: proc() {

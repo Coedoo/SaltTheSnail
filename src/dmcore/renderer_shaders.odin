@@ -1,6 +1,7 @@
 package dmcore
 
 DefaultShaderType :: enum {
+    Blit,
     Sprite,
     ScreenSpaceRect,
     SDFFont,
