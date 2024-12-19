@@ -284,6 +284,10 @@ FlushCommands :: proc(using ctx: ^RenderContext) {
         }
 
         shader := GetElement(ctx.shaders, pp.shader)
+        if shader.pixelShader == nil || shader.vertexShader == nil {
+            continue
+        }
+
 
         ctx.deviceContext->OMSetRenderTargets(1, &ctx.ppRenderTargetDest, nil)
 

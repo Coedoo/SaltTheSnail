@@ -189,8 +189,9 @@ main :: proc() {
                         handle := dm.ShaderHandle(asset.handle)
                         dm.DestroyShader(engineData.renderCtx, handle, freeHandle = false)
 
-                        shader, ok := dm.GetElementPtr(engineData.renderCtx.shaders, handle)
                         source := strings.string_from_ptr(raw_data(data), len(data))
+
+                        shader, ok := dm.GetElementPtr(engineData.renderCtx.shaders, handle)
                         dm.InitShaderSource(engineData.renderCtx, shader, source)
 
                         asset.lastWriteTime = newTime
