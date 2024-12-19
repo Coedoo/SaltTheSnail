@@ -125,7 +125,8 @@ InitParticleSystem :: proc(system: ^ParticleSystem) {
 
 SpawnParticles :: proc(system: ^ParticleSystem, count: int, 
     atPosition: Maybe(v2) = nil, 
-    tint := color{1, 1, 1, 1})
+    tint := color{1, 1, 1, 1},
+    additionalSpeed : Maybe(v2) = nil,)
 {
     maxToAdd := system.maxParticles - len(system.particles)
     count := min(count, maxToAdd)
@@ -143,6 +144,8 @@ SpawnParticles :: proc(system: ^ParticleSystem, count: int,
             case RandomFloat:
                 particle.velocity *= EvaluateRandomProp(s)
         }
+
+        particle.velocity += additionalSpeed.? or_else 0
 
         switch s in system.lifetime {
             case f32: 

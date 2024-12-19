@@ -61,5 +61,6 @@ float4 ps_main(VSOut input) : SV_TARGET
     const float contrast = .5;
     col = col - contrast * (col - 1) * col * (col - 0.5);
 
-    return float4(input.uv.x > 0.5 ? col : original, 1);
+    // return float4(input.uv.x > 0.5 ? col : original, 1);
+    return float4(col, 1);
 }

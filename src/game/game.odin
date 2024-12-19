@@ -20,6 +20,7 @@ windowSize :: iv2{800, 900}
 GameState :: struct {
     bgSprite: dm.Sprite,
     mollySprite: dm.Sprite,
+    mollyHitSprite: dm.Sprite,
     mollyHandsSprite: dm.Sprite,
     holeSprite: dm.Sprite,
     saltSprite: dm.Sprite,
@@ -33,19 +34,23 @@ GameState :: struct {
     holes: [HolesCount]HoleData,
     salts: sa.Small_Array(128, SaltData),
 
+    saltParticles: dm.ParticleSystem,
+
     gameBegun: bool,
     score: int,
     timeLeft: f32,
 
     pp1: dm.PPHandle,
     ppData: PPData,
+
+    blurPP: dm.PPHandle,
 }
 gameState: ^GameState
 
 GameTime :: 60
 
 HoleSize :: v2{1, 1}
-HoleColliderOffset :: v2{0, -0.17}
+HoleColliderOffset :: v2{0, -0.27}
 HolesCount :: 7
 
 BaseSpawnTime :: 1
@@ -83,7 +88,7 @@ BaseStateTimes := [HoleState]f32 {
     .Dormant = 0,
     .Showing = .7,
     .Active = 2.5,
-    .Hit = 0.2,
+    .Hit = 0.4,
     .Hiding = 0.1,
 }
 
@@ -112,9 +117,16 @@ PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
     dm.RegisterAsset("background.png", dm.TextureAssetDescriptor{})
     dm.RegisterAsset("assets.png", dm.TextureAssetDescriptor{})
     dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{})
-    dm.RegisterAsset("Bloom1.hlsl", dm.ShaderAssetDescriptor{})
-    dm.RegisterAsset("Bloom2.hlsl", dm.ShaderAssetDescriptor{})
-    
+    dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{})
+    dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{})
+    dm.RegisterAsset("orange hit hard 12.wav", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("orange hit hard 1.wav", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("orange hit hard 5.wav", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("punch 5.wav", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("punch 1.wav", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("punch 3.wav", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("punch 6.wav", dm.SoundAssetDescriptor{})
+
     // dm.RegisterAsset("Kenney Pixel.ttf", dm.FontAssetDescriptor{
     //     fontType = .SDF,
     //     fontSize = 20,
@@ -134,28 +146,54 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     gameState.bgSprite.scale = f32(gameState.bgSprite.textureSize.x) / PixelsPerUnit
 
     assetsTex := dm.GetTextureAsset("assets.png")
-    gameState.mollySprite = dm.CreateSprite(assetsTex, dm.RectInt{128, 32, 16, 16})
-    gameState.mollySprite.origin = {0.5, 1}
 
-    gameState.mollyHandsSprite = dm.CreateSprite(assetsTex, dm.RectInt{128, 48, 16, 6})
-    gameState.holeSprite = dm.CreateSprite(assetsTex, dm.RectInt{127, 16, 18, 16})
+    gameState.mollySprite = dm.CreateSprite(assetsTex, dm.RectInt{0, 0, 20, 20})
+    gameState.mollySprite.origin = {0.5, 1}
+    gameState.mollySprite.scale = f32(gameState.mollySprite.textureSize.x) / PixelsPerUnit 
+
+    gameState.mollyHitSprite = gameState.mollySprite
+    gameState.mollyHitSprite.texturePos.x = 20
+    gameState.mollyHitSprite.origin = {0.5, 0.95}
+
+    gameState.mollyHandsSprite = dm.CreateSprite(assetsTex, dm.RectInt{40, 0, 20, 20})
+    gameState.mollyHandsSprite.scale = f32(gameState.mollyHandsSprite.textureSize.x) / PixelsPerUnit 
+    gameState.holeSprite = dm.CreateSprite(assetsTex, dm.RectInt{0, 20, 20, 20})
     gameState.holeSprite.scale = f32(gameState.holeSprite.textureSize.x) / PixelsPerUnit
 
-    gameState.saltSprite = dm.CreateSprite(assetsTex, dm.RectInt{128, 64, 16, 16})
-    gameState.saltSprite.scale = 0.5
+    gameState.saltSprite = dm.CreateSprite(assetsTex, dm.RectInt{60, 0, 20, 20})
+    gameState.saltSprite.scale = 0.7
 
-    gameState.btnSprite = dm.CreateSprite(assetsTex, dm.RectInt{128, 80, 16, 16})
-    gameState.btnPressedSprite = dm.CreateSprite(assetsTex, dm.RectInt{128 + 16, 80, 16, 16})
+    gameState.btnSprite = dm.CreateSprite(assetsTex, dm.RectInt{20, 20, 20, 20})
+    gameState.btnPressedSprite = dm.CreateSprite(assetsTex, dm.RectInt{40, 20, 20, 20})
 
     platform.renderCtx.camera.orthoSize = 5.5
     platform.renderCtx.camera.aspect = f32(windowSize.x)/f32(windowSize.y)
 
     gameState.font = dm.LoadFontSDF(platform.renderCtx, "../Assets/Kenney Pixel.ttf", 50)
 
-    gameState.ppData.brightness = 2
+    gameState.ppData.brightness = 1.36
+    gameState.blurPP = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Blur.hlsl"))
     gameState.pp1 = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("PPEffect.hlsl"), gameState.ppData)
-    // pp2 := dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Bloom1.hlsl"))
-    // pp3 := dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Bloom2.hlsl"))
+    dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Vignette.hlsl"))
+
+    // 
+
+    gameState.saltParticles = dm.DefaultParticleSystem
+    ps := &gameState.saltParticles
+    
+    ps.emitRate = 0
+    ps.lifetime = 2
+    ps.color = dm.color{1, 1, 1, 0.7}
+    ps.startSize = dm.RandomFloat{0.05, 0.1}
+    ps.texture = dm.renderCtx.whiteTexture
+    ps.startSpeed = dm.RandomFloat{1, 4}
+    ps.gravity = {0, -20}
+
+    // ps.color = ColorOverLifetime{min = }
+
+
+    dm.InitParticleSystem(&gameState.saltParticles)
+
 }
 
 ResetGame :: proc() {
@@ -202,10 +240,13 @@ SwitchHoleState :: proc(hole: ^HoleData, state: HoleState) {
 GameUpdate : dm.GameUpdate : proc(state: rawptr) {
     gameState = cast(^GameState) state
 
-    if dm.muiBeginWindow(dm.mui, "PP", {10, 10, 100, 80}) {
+    if dm.muiBeginWindow(dm.mui, "PP", {10, 10, 110, 90}) {
         if dm.muiSlider(dm.mui, &gameState.ppData.brightness, 0, 3) {
             dm.PostProcessUpdateData(gameState.pp1)
         }
+
+        pp, ok := dm.GetElementPtr(dm.renderCtx.postProcess, gameState.blurPP)
+        dm.muiToggle(dm.mui, "Blur", &pp.isActive)
 
         dm.muiEndWindow(dm.mui);
     }
@@ -246,12 +287,14 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
         if hole.state == .Showing || hole.state == .Active {
             pos := HolePositions[i] + HoleColliderOffset
 
+            boundsExtend :: 0.2
+
             mouse := dm.ToV2(dm.ScreenToWorldSpace(dm.input.mousePos))
-            bounds := dm.CreateBounds(pos, HoleSize, anchor = {0.5, 0})
+            bounds := dm.CreateBounds(pos - {0, boundsExtend - 0.05}, HoleSize + boundsExtend, anchor = {0.5, 0})
             isInBound := dm.IsInBounds(bounds, mouse.xy)
 
-            // color := isInBound ? dm.RED : dm.GREEN
-            // color.a = 0.2
+            color := isInBound ? dm.RED : dm.GREEN
+            color.a = 0.2
 
             // dm.DrawBounds2D(dm.renderCtx, bounds, false, color = color)
 
@@ -304,7 +347,6 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
             s.airTime += dm.time.deltaTime * 10
 
             if s.airTime >= 1 {
-                // TODO: spawn hit effect
                 dir := dm.RandomDirection()
                 dir.y = abs(dir.y)
 
@@ -315,6 +357,15 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
                 hole.targeted = false
 
                 gameState.score += 10
+
+                dm.SpawnParticles(&gameState.saltParticles, 20, 
+                    atPosition = hole.targetPos + {0, 0.3},
+                    additionalSpeed = cast(v2) glsl.normalize(s.end - s.start) * 5
+                )
+
+                sound := cast(dm.SoundHandle) dm.GetAsset("punch 6.wav")
+                dm.SetVolume(sound, 0.5)
+                dm.PlaySound(sound)
 
                 SwitchHoleState(hole, .Hit)
             }
@@ -367,11 +418,12 @@ GameRender : dm.GameRender : proc(state: rawptr) {
                 sprite.textureSize.y = i32(min(1, p) * f32(sprite.textureSize.y))
             }
             if hole.state == .Hit {
-                color = dm.RED
+                // color = {0.8, 0.8, 0.8, 1}
+                sprite = gameState.mollyHitSprite
             }
 
             dm.DrawSprite(sprite, pos, color = color)
-            dm.DrawSprite(gameState.mollyHandsSprite, HolePositions[i] - {0, 0.2}, color = color)
+            dm.DrawSprite(gameState.mollyHandsSprite, HolePositions[i] + {0, 0.2}, color = color)
         }
     }
 
@@ -379,12 +431,15 @@ GameRender : dm.GameRender : proc(state: rawptr) {
     dm.DrawSprite(gameState.btnSprite, ResetButtonPos)
 
     dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5v", gameState.score), gameState.font, {280, 280}, color = {1, 1, 1, 1}, fontSize = 70)
-    dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5.2f",gameState.timeLeft), gameState.font, {520, 280}, color = {1, 1, 1, 1}, fontSize = 70)
+    dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5.2f",gameState.timeLeft), gameState.font, {525, 280}, color = {1, 1, 1, 1}, fontSize = 70)
 
     for i in 0..<gameState.salts.len {
         s := &gameState.salts.data[i]
         dm.DrawSprite(gameState.saltSprite, s.position, rotation = s.rotation)
     }
 
+    dm.UpdateAndDrawParticleSystem(&gameState.saltParticles)
+
     // dm.DrawGrid()
 }
+// 
