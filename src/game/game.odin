@@ -36,6 +36,13 @@ GameState :: struct {
 
     saltParticles: dm.ParticleSystem,
 
+    startBtnPressed: bool,
+    flipBtnPressed: bool,
+
+    flipAvailble: bool,
+    flipActive: bool,
+    flipTimer: f32,
+
     gameBegun: bool,
     score: int,
     timeLeft: f32,
@@ -54,6 +61,12 @@ HoleColliderOffset :: v2{0, -0.27}
 HolesCount :: 7
 
 BaseSpawnTime :: 1
+
+FlipInterval :: 10
+FlipDuration :: 7
+
+FlipButtonPos :: v2{-2, -4.3}
+StartButtonPos :: v2{2, -4.3}
 
 HoleState :: enum {
     Dormant,
@@ -105,12 +118,10 @@ SaltData :: struct {
     rotationSpeed: f32,
 }
 
-StartButtonPos :: v2{-2, -4.3}
-ResetButtonPos :: v2{2, -4.3}
-
 PPData :: struct #align(16) {
     brightness: f32,
 }
+
 
 @export
 PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
@@ -164,7 +175,9 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     gameState.saltSprite.scale = 0.7
 
     gameState.btnSprite = dm.CreateSprite(assetsTex, dm.RectInt{20, 20, 20, 20})
+    gameState.btnSprite.scale = f32(gameState.btnSprite.textureSize.x) / PixelsPerUnit
     gameState.btnPressedSprite = dm.CreateSprite(assetsTex, dm.RectInt{40, 20, 20, 20})
+    gameState.btnPressedSprite.scale = f32(gameState.btnPressedSprite.textureSize.x) / PixelsPerUnit
 
     platform.renderCtx.camera.orthoSize = 5.5
     platform.renderCtx.camera.aspect = f32(windowSize.x)/f32(windowSize.y)
@@ -201,6 +214,9 @@ ResetGame :: proc() {
         hole.state = .Dormant
     }
 
+    gameState.flipAvailble = false
+    gameState.flipActive = false
+
     sa.clear(&gameState.salts)
 }
 
@@ -208,6 +224,8 @@ StartGame :: proc() {
     gameState.gameBegun = true
     gameState.timeLeft = GameTime
     gameState.score = 0
+
+    gameState.flipTimer = FlipInterval
 }
 
 DifficultyCurve :: proc() -> f32{
@@ -234,30 +252,53 @@ SwitchHoleState :: proc(hole: ^HoleData, state: HoleState) {
     }
 }
 
+HandleButton :: proc(pressed: ^bool, buttonPos: v2, mousePos: v2) -> bool {
+    bounds := dm.SpriteBounds(gameState.btnSprite, buttonPos)
+    inBounds := dm.IsInBounds(bounds, mousePos)
+
+    mouseBtn := dm.GetMouseButton(.Left)
+
+    if mouseBtn == .JustReleased {
+        if pressed^ {
+            pressed^ = false
+            return inBounds
+        }
+    }
+
+    if mouseBtn == .JustPressed {
+        if inBounds {
+            pressed^ = true
+        }
+    }
+
+    return false
+}
+
 @(export)
 GameUpdate : dm.GameUpdate : proc(state: rawptr) {
     gameState = cast(^GameState) state
 
-    if dm.muiBeginWindow(dm.mui, "PP", {10, 10, 110, 90}) {
-        if dm.muiSlider(dm.mui, &gameState.ppData.brightness, 0, 3) {
-            dm.PostProcessUpdateData(gameState.pp1)
-        }
+    mouse := dm.ToV2(dm.ScreenToWorldSpace(dm.input.mousePos))
 
-        pp, ok := dm.GetElementPtr(dm.renderCtx.postProcess, gameState.blurPP)
-        dm.muiToggle(dm.mui, "Blur", &pp.isActive)
+    if dm.muiBeginWindow(dm.mui, "PP", {10, 10, 110, 90}) {
+        dm.muiLabel(dm.mui, fmt.tprint("FlipTimer", gameState.flipTimer))
+        dm.muiLabel(dm.mui, fmt.tprint("Flip Availble", gameState.flipAvailble))
+        dm.muiLabel(dm.mui, fmt.tprint("Flip Active", gameState.flipActive))
 
         dm.muiEndWindow(dm.mui);
     }
 
+    startButtonPressed := HandleButton(&gameState.startBtnPressed, StartButtonPos, mouse)
+
     if gameState.gameBegun == false {
-        if dm.GetKeyState(.Space) == .JustPressed {
+        if startButtonPressed {
             StartGame()
         }
 
         return
     }
 
-    if dm.GetKeyState(.Space) == .JustPressed {
+    if startButtonPressed {
         ResetGame()
     }
 
@@ -287,7 +328,6 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
 
             boundsExtend :: 0.2
 
-            mouse := dm.ToV2(dm.ScreenToWorldSpace(dm.input.mousePos))
             bounds := dm.CreateBounds(pos - {0, boundsExtend - 0.05}, HoleSize + boundsExtend, anchor = {0.5, 0})
             isInBound := dm.IsInBounds(bounds, mouse.xy)
 
@@ -379,6 +419,26 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
         }
     }
 
+    if gameState.flipAvailble {
+        if HandleButton(&gameState.flipBtnPressed, FlipButtonPos, mouse) {
+            gameState.flipActive = true
+            gameState.flipAvailble = false
+            gameState.flipTimer = FlipDuration
+        }
+    }
+    else {
+        gameState.flipTimer -= dm.time.deltaTime
+        if gameState.flipTimer < 0 {
+            if gameState.flipActive {
+                gameState.flipActive = false
+                gameState.flipTimer = FlipInterval
+            }
+            else {
+                gameState.flipAvailble = true
+            }
+        }
+    }
+
     if gameState.timeLeft < 0 {
         gameState.timeLeft = 0
         ResetGame()
@@ -425,11 +485,47 @@ GameRender : dm.GameRender : proc(state: rawptr) {
         }
     }
 
-    dm.DrawSprite(gameState.btnSprite, StartButtonPos)
-    dm.DrawSprite(gameState.btnSprite, ResetButtonPos)
+    dm.DrawSprite(
+        (gameState.startBtnPressed ? 
+            gameState.btnPressedSprite : 
+            gameState.btnSprite),
+        StartButtonPos
+    )
+
+    dm.DrawSprite(
+        (gameState.flipBtnPressed || gameState.flipAvailble == false ? 
+            gameState.btnPressedSprite : 
+            gameState.btnSprite),
+        FlipButtonPos
+    )
 
     dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5v", gameState.score), gameState.font, {280, 280}, color = {1, 1, 1, 1}, fontSize = 70)
     dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5.2f",gameState.timeLeft), gameState.font, {525, 280}, color = {1, 1, 1, 1}, fontSize = 70)
+
+
+    nonPressedOffset :: v2{3, 10}
+    pressedOffset:: v2{3, 3}
+
+    p := dm.WorldToScreenPoint(StartButtonPos)
+    dm.DrawTextCentered(
+        dm.renderCtx, 
+        "START", 
+        gameState.font, 
+        dm.ToV2(p) + (gameState.startBtnPressed ? pressedOffset : nonPressedOffset),
+        color = {1, 1, 1, 1}, 
+        fontSize = 20
+    )
+
+    flipPressed := gameState.flipBtnPressed || gameState.flipAvailble == false
+    p = dm.WorldToScreenPoint(FlipButtonPos)
+    dm.DrawTextCentered(
+        dm.renderCtx,
+        "FLIP",
+        gameState.font,
+        dm.ToV2(p) + (flipPressed ? pressedOffset : nonPressedOffset),
+        color = {1, 1, 1, 1},
+        fontSize = 20
+    )
 
     for i in 0..<gameState.salts.len {
         s := &gameState.salts.data[i]
@@ -438,6 +534,5 @@ GameRender : dm.GameRender : proc(state: rawptr) {
 
     dm.UpdateAndDrawParticleSystem(&gameState.saltParticles)
 
-    // dm.DrawGrid()
+    dm.DrawGrid()
 }
-// 
