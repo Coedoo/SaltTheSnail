@@ -148,12 +148,12 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     assetsTex := dm.GetTextureAsset("assets.png")
 
     gameState.mollySprite = dm.CreateSprite(assetsTex, dm.RectInt{0, 0, 20, 20})
-    gameState.mollySprite.origin = {0.5, 1}
+    gameState.mollySprite.origin = {0.5, 0}
     gameState.mollySprite.scale = f32(gameState.mollySprite.textureSize.x) / PixelsPerUnit 
 
     gameState.mollyHitSprite = gameState.mollySprite
     gameState.mollyHitSprite.texturePos.x = 20
-    gameState.mollyHitSprite.origin = {0.5, 0.95}
+    gameState.mollyHitSprite.origin = {0.5, 0.05}
 
     gameState.mollyHandsSprite = dm.CreateSprite(assetsTex, dm.RectInt{40, 0, 20, 20})
     gameState.mollyHandsSprite.scale = f32(gameState.mollyHandsSprite.textureSize.x) / PixelsPerUnit 

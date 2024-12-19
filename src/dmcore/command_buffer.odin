@@ -131,12 +131,15 @@ DrawSpriteCtx :: proc(ctx: ^RenderContext, sprite: Sprite, position: v2,
 
     size := GetSpriteSize(sprite)
 
+    pivot := sprite.origin
+    pivot.y = -pivot.y + 1
+
     // @TODO: flip will be incorrect for every sprite that doesn't
     // use {0.5, 0.5} as origin
     flip := v2{sprite.flipX ? -1 : 1, sprite.flipY ? -1 : 1}
 
     cmd.position = position
-    cmd.pivot = sprite.origin
+    cmd.pivot = pivot
     cmd.size = size * flip
     cmd.texSource = {texPos.x, texPos.y, sprite.textureSize.x, sprite.textureSize.y}
     cmd.rotation = rotation

@@ -58,8 +58,6 @@ Ray2D :: struct {
 }
 
 CreateBounds :: proc(pos: v2, size: v2, anchor: v2 = {0.5, 0.5}) -> Bounds2D {
-    anchor := math.saturate(anchor)
-
     return {
         left  = pos.x - size.x * anchor.x,
         right = pos.x + size.x * (1 - anchor.x),
@@ -98,6 +96,17 @@ Ray2DFromTwoPoints :: proc(a, b: v2) -> Ray2D {
 IsInBounds :: proc(bounds: Bounds2D, point: v2) -> bool {
     return point.x > bounds.left && point.x < bounds.right &&
            point.y > bounds.bot && point.y < bounds.top
+}
+
+SpriteBounds :: proc(sprite: Sprite, position: v2) -> Bounds2D {
+    spriteSize: v2
+    spriteSize.x = sprite.scale
+    spriteSize.y = f32(sprite.textureSize.y) / f32(sprite.textureSize.x) * spriteSize.x
+
+    anchor := sprite.origin
+    bounds := CreateBounds(position, spriteSize, anchor)
+
+    return bounds
 }
 
 ///////////

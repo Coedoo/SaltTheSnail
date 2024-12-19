@@ -78,6 +78,19 @@ GetVPMatrix :: proc(camera: Camera) -> mat4 {
     return proj * view
 }
 
+WorldToScreenPoint :: proc(pos: v2) -> iv2 {
+    p := GetVPMatrix(renderCtx.camera) * v4{pos.x, pos.y, 0, 1}
+    p.xyz /= p.w
+
+    p = p * 0.5 + 0.5
+    p.y = 1 - p.y
+
+    return {
+        i32(p.x * f32(renderCtx.frameSize.x)),
+        i32(p.y * f32(renderCtx.frameSize.y)),
+    }
+}
+
 WorldToClipSpace :: proc(camera: Camera, point: v3) -> v3 {
     p := GetVPMatrix(camera) * v4{point.x, point.y, point.z, 1}
     p.xyz /= p.w
