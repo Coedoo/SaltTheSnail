@@ -184,16 +184,14 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     ps.emitRate = 0
     ps.lifetime = 2
     ps.color = dm.color{1, 1, 1, 0.7}
+    ps.startRotation = dm.RandomFloat{0, 360}
+    ps.startRotationSpeed = dm.RandomFloat{1, 20}
     ps.startSize = dm.RandomFloat{0.05, 0.1}
     ps.texture = dm.renderCtx.whiteTexture
     ps.startSpeed = dm.RandomFloat{1, 4}
     ps.gravity = {0, -20}
 
-    // ps.color = ColorOverLifetime{min = }
-
-
     dm.InitParticleSystem(&gameState.saltParticles)
-
 }
 
 ResetGame :: proc() {
