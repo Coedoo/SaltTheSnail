@@ -194,11 +194,11 @@ FlushCommands :: proc(ctx: ^RenderContext) {
             ctx.deviceContext->ClearRenderTargetView(ctx.ppRenderTargetSrc, transmute(^[4]f32) &cmd.clearColor)
 
         case CameraCommand:
-            view := GetViewMatrix(cmd.camera)
-            proj := GetProjectionMatrixZTO(cmd.camera)
+            view = GetViewMatrix(cmd.camera)
+            proj = GetProjectionMatrixZTO(cmd.camera)
 
-            mapped: d3d11.MAPPED_SUBRESOURCE
-            res := ctx.deviceContext->Map(ctx.cameraConstBuff, 0, .WRITE_DISCARD, nil, &mapped);
+            // mapped: d3d11.MAPPED_SUBRESOURCE
+            ctx.deviceContext->Map(ctx.cameraConstBuff, 0, .WRITE_DISCARD, nil, &mapped);
             c := cast(^PerFrameData) mapped.pData
             c.VPMat = proj * view
             c.invVPMat = glsl.inverse(proj * view)
@@ -265,8 +265,8 @@ FlushCommands :: proc(ctx: ^RenderContext) {
             scale := [3]f32{ 2.0 / f32(ctx.frameSize.x), -2.0 / f32(ctx.frameSize.y), 0}
             mat := glsl.mat4Translate({-1, 1, 0}) * glsl.mat4Scale(scale)
 
-            mapped: d3d11.MAPPED_SUBRESOURCE
-            res := ctx.deviceContext->Map(ctx.cameraConstBuff, 0, .WRITE_DISCARD, nil, &mapped);
+            // mapped: d3d11.MAPPED_SUBRESOURCE
+            ctx.deviceContext->Map(ctx.cameraConstBuff, 0, .WRITE_DISCARD, nil, &mapped);
             c := cast(^PerFrameData) mapped.pData
             c.VPMat = mat
             c.invVPMat = glsl.inverse(mat)

@@ -132,9 +132,9 @@ SpawnParticles :: proc(system: ^ParticleSystem, count: int,
     additionalSpeed : Maybe(v2) = nil,)
 {
     maxToAdd := system.maxParticles - len(system.particles)
-    count := min(count, maxToAdd)
+    maxCount := min(count, maxToAdd)
 
-    for i in 0..<count {
+    for i in 0..<maxCount {
         particle := Particle {
             velocity = RandAtUnitCircle(),
             position = atPosition.? or_else system.position,

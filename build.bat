@@ -13,7 +13,8 @@ robocopy ..\lib . /s > nul
 
 for %%a in (%*) do set "%%a=1"
 
-set flags=""
+set flags="-vet-shadowing"
+rem set flags=""
 
 if "%release%" == "1" (
     echo RELEASE

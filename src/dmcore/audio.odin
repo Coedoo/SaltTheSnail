@@ -67,10 +67,10 @@ SetVolumeCtx :: proc(audio: ^Audio, handle: SoundHandle, volume: f32) {
         return
     }
 
-    volume := clamp(volume, 0, 1)
-    _SetVolume(sound, volume)
+    clampedVolume := clamp(volume, 0, 1)
+    _SetVolume(sound, clampedVolume)
 
-    sound._volume = volume
+    sound._volume = clampedVolume
 }
 
 SetLooping :: proc(handle: SoundHandle, looping: bool) {

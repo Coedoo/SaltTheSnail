@@ -130,8 +130,7 @@ DrawText :: proc(str: string, position: v2,
 
 
     // // @TODO: I can cache atlas size
-    texSize := GetTextureSize(font.atlas)
-    fontAtlasSize := ToV2(texSize)
+    fontAtlasSize := ToV2(GetTextureSize(font.atlas))
 
     yDir: f32 = renderCtx.inScreenSpace ? 1 : -1
 

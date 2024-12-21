@@ -133,9 +133,9 @@ main :: proc() {
                 asset.handle = cast(dm.Handle) dm.LoadSoundFromMemoryCtx(&engineData.audio, data)
 
             case dm.RawFileAssetDescriptor:
-                data, ok := os.read_entire_file(path)
-                if ok {
-                    asset.fileData = data
+                fileData, fileOk := os.read_entire_file(path)
+                if fileOk {
+                    asset.fileData = fileData
                 }
             }
         }
@@ -170,8 +170,8 @@ main :: proc() {
 
             case dm.TextureAssetDescriptor:
                 path := strings.concatenate({dm.ASSETS_ROOT, name}, context.temp_allocator)
-                newTime, err := os.last_write_time_by_name(path)
-                if err == os.ERROR_NONE && newTime > asset.lastWriteTime {
+                assetNewTime, err := os.last_write_time_by_name(path)
+                if err == os.ERROR_NONE && assetNewTime > asset.lastWriteTime {
                     data, ok := os.read_entire_file(path, context.temp_allocator)
                     if ok {
                         // image, pngErr := png.load_from_bytes(data, allocator = context.temp_allocator)
@@ -180,15 +180,15 @@ main :: proc() {
                         //     dm._ReleaseTexture(tex)
                         //     dm._InitTexture(engineData.renderCtx, tex, image.pixels.buf[:], image.width, image.height, image.channels, desc.filter)
 
-                        //     asset.lastWriteTime = newTime
+                        //     asset.lastWriteTime = assetNewTime
                         // }
                     }
                 }
 
             case dm.ShaderAssetDescriptor:
                 path := strings.concatenate({dm.ASSETS_ROOT, name}, context.temp_allocator)
-                newTime, err := os.last_write_time_by_name(path)
-                if err == os.ERROR_NONE && newTime > asset.lastWriteTime {
+                assetNewTime, err := os.last_write_time_by_name(path)
+                if err == os.ERROR_NONE && assetNewTime > asset.lastWriteTime {
                     data, ok := os.read_entire_file(path, context.temp_allocator)
                     if ok {
                         handle := dm.ShaderHandle(asset.handle)
@@ -196,10 +196,10 @@ main :: proc() {
 
                         source := strings.string_from_ptr(raw_data(data), len(data))
 
-                        shader, ok := dm.GetElementPtr(engineData.renderCtx.shaders, handle)
+                        shader, _ := dm.GetElementPtr(engineData.renderCtx.shaders, handle)
                         dm.InitShaderSource(engineData.renderCtx, shader, source)
 
-                        asset.lastWriteTime = newTime
+                        asset.lastWriteTime = assetNewTime
                         fmt.println("Reloading shader:", name)
                     }
                 }
