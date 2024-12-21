@@ -43,6 +43,10 @@ GameState :: struct {
     flipActive: bool,
     flipTimer: f32,
 
+    flipAnimActive: bool,
+    flipAnimDir: int,
+    flipAnimTimer: f32,
+
     gameBegun: bool,
     score: int,
     timeLeft: f32,
@@ -64,6 +68,8 @@ BaseSpawnTime :: 1
 
 FlipInterval :: 10
 FlipDuration :: 7
+
+FlipAnimTime :: 0.3
 
 FlipButtonPos :: v2{-2, -4.3}
 StartButtonPos :: v2{2, -4.3}
@@ -426,6 +432,10 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
             gameState.flipActive = true
             gameState.flipAvailble = false
             gameState.flipTimer = FlipDuration
+
+            gameState.flipAnimActive = true
+            gameState.flipAnimTimer = 0
+            gameState.flipAnimDir = 1
         }
     }
     else {
@@ -434,10 +444,30 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
             if gameState.flipActive {
                 gameState.flipActive = false
                 gameState.flipTimer = FlipInterval
+
+                gameState.flipAnimActive = true
+                gameState.flipAnimTimer = 0
+                gameState.flipAnimDir = -1
             }
             else {
                 gameState.flipAvailble = true
             }
+        }
+    }
+
+    if gameState.flipAnimActive {
+        gameState.flipAnimTimer += dm.time.deltaTime
+        if gameState.flipAnimTimer >= FlipAnimTime {
+            gameState.flipAnimActive = false
+            gameState.flipAnimTimer = FlipAnimTime
+        }
+
+        p := gameState.flipAnimTimer / FlipAnimTime
+        if gameState.flipAnimDir == 1 {
+            dm.renderCtx.camera.rotation = p * 180
+        }
+        else {
+            dm.renderCtx.camera.rotation = (1 - p) * 180
         }
     }
 
@@ -458,13 +488,6 @@ GameUpdateDebug : dm.GameUpdateDebug : proc(state: rawptr, debug: bool) {
 GameRender : dm.GameRender : proc(state: rawptr) {
     gameState = cast(^GameState) state
     dm.ClearColor({0.0/255.0, 24.0/255.0, 4.0/255.0, 1})
-
-    if gameState.flipActive {
-        dm.renderCtx.camera.rotation = 180
-    }
-    else {
-        dm.renderCtx.camera.rotation = 0
-    }
 
     dm.DrawSprite(gameState.bgSprite, {0, 0})
 
@@ -537,5 +560,5 @@ GameRender : dm.GameRender : proc(state: rawptr) {
 
     dm.UpdateAndDrawParticleSystem(&gameState.saltParticles)
 
-    dm.DrawGrid()
+    // dm.DrawGrid()
 }

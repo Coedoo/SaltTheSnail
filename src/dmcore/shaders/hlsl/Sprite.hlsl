@@ -76,7 +76,7 @@ pixel vs_main(uint spriteId: SV_INSTANCEID, uint vertexId : SV_VERTEXID) {
     };
 
     float4 tex = texUVS[screenSpace];
-    p.uv = float2(tex[i.x], tex[i.y]);
+    p.uv = float2(tex[i.x] + 0.5, tex[i.y] - 0.5);
 
     p.color = sp.color;
 
