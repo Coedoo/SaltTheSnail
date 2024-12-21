@@ -27,7 +27,7 @@ GameState :: struct {
     btnSprite: dm.Sprite,
     btnPressedSprite: dm.Sprite,
 
-    font: dm.Font,
+    font: dm.FontHandle,
 
     newActiveTimer: f32,
 
@@ -128,6 +128,8 @@ PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
     dm.RegisterAsset("background.png", dm.TextureAssetDescriptor{})
     dm.RegisterAsset("assets.png", dm.TextureAssetDescriptor{})
     dm.RegisterAsset("test.hlsl", dm.ShaderAssetDescriptor{})
+    dm.RegisterAsset("Kenney Pixel.ttf", dm.FontAssetDescriptor{.SDF, 50})
+
     // dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{})
     // dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{})
     // dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{})
@@ -183,7 +185,8 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     platform.renderCtx.camera.orthoSize = 5.5
     platform.renderCtx.camera.aspect = f32(windowSize.x)/f32(windowSize.y)
 
-    gameState.font = dm.LoadFontSDF(platform.renderCtx, "../Assets/Kenney Pixel.ttf", 50)
+    // gameState.font = dm.LoadFontSDF(platform.renderCtx, "../Assets/Kenney Pixel.ttf", 50)
+    gameState.font = cast(dm.FontHandle) dm.GetAsset("Kenney Pixel.ttf")
 
     // gameState.ppData.brightness = 1.36
     // gameState.blurPP = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Blur.hlsl"))
@@ -503,12 +506,11 @@ GameRender : dm.GameRender : proc(state: rawptr) {
     )
 
 
-    text := "1.abCDeF\n2.LOrem\n3.ipsuM"
+    text := "1.abCDjgeF\n2.LOrem\n3.ipsuM"
     dm.DrawText(
-        dm.renderCtx,
         text,
-        gameState.font,
         {0, 0},
+        gameState.font,
         color = {1, 1, 1, 1},
         fontSize = 1
     )
@@ -516,10 +518,9 @@ GameRender : dm.GameRender : proc(state: rawptr) {
     dm.BeginScreenSpace()
     p := dm.WorldToScreenPoint({-3, 0})
     dm.DrawText(
-        dm.renderCtx,
         text,
-        gameState.font,
         dm.ToV2(p),
+        gameState.font,
         color = {1, 1, 1, 1},
         fontSize = 30
     )

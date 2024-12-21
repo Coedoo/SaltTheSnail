@@ -296,6 +296,7 @@ SetShaderData :: proc(slot: int, data: any) {
 
 BeginScreenSpace :: proc() {
     append(&renderCtx.commandBuffer.commands, BeginScreenSpaceCommand{})
+    renderCtx.inScreenSpace = true
 }
 
 
@@ -304,4 +305,5 @@ EndScreenSpace :: proc() {
 
     // TODO: cameras stack or something
     SetCamera(renderCtx.camera)
+    renderCtx.inScreenSpace = false
 }

@@ -122,7 +122,12 @@ main :: proc() {
                 asset.handle = cast(dm.Handle) dm.CompileShaderSource(engineData.renderCtx, name, str)
 
             case dm.FontAssetDescriptor:
-                panic("FIX SUPPORT OF FONT ASSET LOADING")
+                if desc.fontType == .SDF {
+                    asset.handle = dm.LoadFontSDF(engineData.renderCtx, data, desc.fontSize)
+                }
+                else {
+                    panic("FIX ME")
+                }
 
             case dm.SoundAssetDescriptor:
                 asset.handle = cast(dm.Handle) dm.LoadSoundFromMemoryCtx(&engineData.audio, data)

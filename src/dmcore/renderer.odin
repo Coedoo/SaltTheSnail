@@ -1,6 +1,7 @@
 package dmcore
 
 import "core:mem"
+import "core:encoding/base64"
 
 TexHandle :: distinct Handle
 ShaderHandle :: distinct Handle
@@ -22,9 +23,10 @@ RenderContext :: struct {
 
     commandBuffer: CommandBuffer,
 
-    textures: ResourcePool(Texture, TexHandle),
-    shaders: ResourcePool(Shader, ShaderHandle),
-    buffers: ResourcePool(GPUBuffer, GPUBufferHandle),
+    textures:    ResourcePool(Texture, TexHandle),
+    shaders:     ResourcePool(Shader, ShaderHandle),
+    buffers:     ResourcePool(GPUBuffer, GPUBufferHandle),
+    fonts:       ResourcePool(Font, FontHandle),
     postProcess: ResourcePool(PostProcess, PPHandle),
 
     defaultShaders: [DefaultShaderType]ShaderHandle,
@@ -33,6 +35,8 @@ RenderContext :: struct {
     uniformAllocator: mem.Allocator,
 
     camera: Camera,
+
+    inScreenSpace: bool,
 
     using backend: RenderContextBackend,
 }
@@ -53,8 +57,31 @@ InitRenderContext :: proc(ctx: ^RenderContext) -> ^RenderContext {
     InitResourcePool(&ctx.textures, 128)
     InitResourcePool(&ctx.shaders, 64)
     InitResourcePool(&ctx.buffers, 64)
+    InitResourcePool(&ctx.fonts, 4)
     InitResourcePool(&ctx.postProcess, 4)
 
+    // Batches
+    InitRectBatch(ctx, &ctx.defaultBatch, 1024)
+    ctx.debugBatch = CreatePrimitiveBatch(ctx, 4086, PrimitiveVertexShaderSource)
+    ctx.debugBatchScreen = CreatePrimitiveBatch(ctx, 4086, PrimitiveVertexScreenShaderSource)
+
+    // Shaders
+    ctx.defaultShaders[.Blit] = CompileShaderSource(ctx, "Blit", BlitShaderSource)
+    ctx.defaultShaders[.ScreenSpaceRect] = CompileShaderSource(ctx, "SSRect", ScreenSpaceRectShaderSource)
+    ctx.defaultShaders[.Sprite] = CompileShaderSource(ctx, "Sprite", SpriteShaderSource)
+    ctx.defaultShaders[.SDFFont] = CompileShaderSource(ctx, "SDFFont", SDFFontSource)
+    ctx.defaultShaders[.Grid] = CompileShaderSource(ctx, "Grid", GridShaderSource)
+
+    // Camera and window
+    ctx.frameSize = { defaultWindowWidth, defaultWindowHeight }
+    ctx.camera = CreateCamera(5, f32(defaultWindowWidth)/f32(defaultWindowHeight))
+
+    // memory
+    uniformMem := make([]byte, UNIFORM_MEM)
+    mem.arena_init(&ctx.uniformArena, uniformMem)
+    ctx.uniformAllocator = mem.arena_allocator(&ctx.uniformArena)
+
+    // Default assets
     texData := []u8{255, 255, 255, 255}
     ctx.whiteTexture = CreateTexture(ctx, texData, 1, 1, 4, .Point)
 
@@ -62,23 +89,11 @@ InitRenderContext :: proc(ctx: ^RenderContext) -> ^RenderContext {
     texData = []u8{255, 255, 0, 255}
     _InitTexture(ctx, errorTex, texData, 1, 1, 4, .Point)
 
-    InitRectBatch(ctx, &ctx.defaultBatch, 1024)
-    ctx.debugBatch = CreatePrimitiveBatch(ctx, 4086, PrimitiveVertexShaderSource)
-    ctx.debugBatchScreen = CreatePrimitiveBatch(ctx, 4086, PrimitiveVertexScreenShaderSource)
+    atlasData := base64.decode(DEFAULT_FONT_ATLAS, allocator = context.temp_allocator)
+    fontType:TextureFilter = DefaultFont.type == .SDF ? .Bilinear : .Point
+    DefaultFont.atlas = CreateTexture(ctx, atlasData, DEFAULT_FONT_ATLAS_SIZE, DEFAULT_FONT_ATLAS_SIZE, 4, fontType)
 
-    ctx.defaultShaders[.Blit] = CompileShaderSource(ctx, "Blit", BlitShaderSource)
-    ctx.defaultShaders[.ScreenSpaceRect] = CompileShaderSource(ctx, "SSRect", ScreenSpaceRectShaderSource)
-    ctx.defaultShaders[.Sprite] = CompileShaderSource(ctx, "Sprite", SpriteShaderSource)
-    ctx.defaultShaders[.SDFFont] = CompileShaderSource(ctx, "SDFFont", SDFFontSource)
-    ctx.defaultShaders[.Grid] = CompileShaderSource(ctx, "Grid", GridShaderSource)
-
-    ctx.frameSize = { defaultWindowWidth, defaultWindowHeight }
-    ctx.camera = CreateCamera(5, f32(defaultWindowWidth)/f32(defaultWindowHeight))
-
-    uniformMem := make([]byte, UNIFORM_MEM)
-    mem.arena_init(&ctx.uniformArena, uniformMem)
-    ctx.uniformAllocator = mem.arena_allocator(&ctx.uniformArena)
-
+    ctx.fonts.elements[0] = DefaultFont
 
     return ctx
 }

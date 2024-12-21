@@ -154,7 +154,7 @@ UIRect :: struct {
 }
 
 Style :: struct {
-    font: Font,
+    font: FontHandle,
     fontSize: int,
 
     textColor: color,
@@ -183,9 +183,9 @@ InitUI :: proc(uiCtx: ^UIContext, renderCtx: ^RenderContext) {
     uiCtx.nodes = make([dynamic]UINode, 0, 1024)
     uiCtx.stylesStack = make([dynamic]Style, 0, 32)
 
-    font := LoadDefaultFont(renderCtx)
+    // font := LoadDefaultFont(renderCtx)
     uiCtx.defaultStyle = {
-        font = font,
+        // font = font,
         fontSize = 18,
 
         textColor = {1, 1, 1, 1},
@@ -959,10 +959,9 @@ DrawNode :: proc(renderCtx: ^RenderContext, node: ^UINode) {
     if .DrawText in node.flags {
         pos := node.targetPos + (node.targetSize - node.textSize) / 2
         DrawText(
-            renderCtx,
             node.text,
-            node.font,
             pos,
+            node.font,
             node.fontSize,
             color = node.textColor,
         )
