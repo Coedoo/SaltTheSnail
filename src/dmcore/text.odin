@@ -80,12 +80,16 @@ KerningLookup :: proc(font: Font, a, b: rune) -> f32  {
     return font.kerningTable[key]
 }
 
-DrawTextCentered :: proc(ctx: ^RenderContext, str: string, font: Font, position: v2, 
-    fontSize: int = 0,
+DrawTextCentered :: proc(str: string, position: v2,
+    fontHandle: FontHandle = {0, 0},
+    fontSize: f32 = 0,
     color := color{1, 1, 1, 1})
 {
     str := str
+    font := GetElement(renderCtx.fonts, fontHandle)
     sizeY := MeasureText(str, font, fontSize).y
+
+    scale := fontSize / f32(font.size)
 
     line := 0
     for {
@@ -101,7 +105,7 @@ DrawTextCentered :: proc(ctx: ^RenderContext, str: string, font: Font, position:
         size := MeasureText(toDraw, font, fontSize)
         drawPos := v2{position.x - size.x / 2, position.y + f32(line) * font.lineHeight - sizeY / 2}
 
-        // DrawText(ctx, toDraw, font, drawPos, fontSize, color)
+        DrawText(toDraw, drawPos, fontHandle, fontSize, color)
 
         line += 1
         str = str[idx + 1:]
@@ -114,36 +118,38 @@ DrawTextCentered :: proc(ctx: ^RenderContext, str: string, font: Font, position:
 
 DrawText :: proc(str: string, position: v2,
     fontHandle: FontHandle = {0, 0},
-    fontSize: int = 0,
+    fontSize: f32 = 0,
     color := color{1, 1, 1, 1})
 {
     font := GetElement(renderCtx.fonts, fontHandle)
 
     fontSize := fontSize
-    if fontSize == 0 do fontSize = font.size
+    if fontSize == 0 do fontSize = f32(font.size)
 
-    scale := f32(fontSize) / f32(font.size)
+    scale := fontSize / f32(font.size)
 
-    posX := position.x
-    posY := position.y + font.lineHeight * scale
 
-    // @TODO: I can cache atlas size
+    // // @TODO: I can cache atlas size
     texSize := GetTextureSize(font.atlas)
     fontAtlasSize := ToV2(texSize)
 
+    yDir: f32 = renderCtx.inScreenSpace ? 1 : -1
+
     ///// DEBUG
-    size := MeasureText(str, font, fontSize)
-    DrawBox2D(renderCtx, position + size / 2, size, true)
+    // size := MeasureText(str, font, fontSize)
+    // DrawBox2D(renderCtx, position + size / 2 * {1, yDir}, size, renderCtx.inScreenSpace, color = RED)
     ////
 
     shader := renderCtx.defaultShaders[.SDFFont] if font.type == .SDF else renderCtx.defaultShaders[.ScreenSpaceRect]
 
-    yDir: f32 = renderCtx.inScreenSpace ? 1 : -1
+    posX := position.x
+    posY := position.y + font.lineHeight * scale * yDir
 
     runes := utf8.string_to_runes(str, context.temp_allocator)
     for c, i in runes {
         if c == '\n' {
             posY += font.lineHeight * scale * yDir
+            // posY += font.lineHeight * scale
             posX = position.x
 
             continue
@@ -152,21 +158,31 @@ DrawText :: proc(str: string, position: v2,
         index := GetCodepointIndex(c)
         glyphData := font.glyphData[index]
 
-        pos  := v2{posX, posY} 
-        size := v2{f32(glyphData.pixelWidth), f32(glyphData.pixelHeight)}
-        dest := Rect{pos.x, pos.y, size.x * scale, size.y * scale}
-
         texPos  := ToIv2(glyphData.atlasPos  * fontAtlasSize)
         texSize := ToIv2(glyphData.atlasSize * fontAtlasSize)
-        src := RectInt{texPos.x, texPos.y, texSize.x, texSize.y}
 
-        DrawRect(renderCtx, font.atlas, src, dest, shader, v2{0, 0}, color)
+        pY := posY
+        if renderCtx.inScreenSpace == false {
+            pY -= f32(glyphData.pixelHeight) * scale;
+        }
+
+        cmd: DrawRectCommand
+        cmd.position = {posX, pY} + {0, glyphData.offset.y * scale * yDir}
+        cmd.size = v2{f32(glyphData.pixelWidth), f32(glyphData.pixelHeight)} * scale
+        cmd.texSource = {texPos.x, texPos.y, texSize.x, texSize.y}
+        cmd.tint = color
+        cmd.pivot = {0, 0}
+
+        cmd.texture = font.atlas
+        cmd.shader =  shader
+
+        append(&renderCtx.commandBuffer.commands, cmd)
 
         advance := glyphData.advanceX if glyphData.advanceX != 0 else glyphData.pixelWidth
         posX += f32(advance) * scale
 
         if i + 1 < len(runes) {
-            posX += KerningLookup(font, c, runes[i+1])
+            posX += KerningLookup(font, c, runes[i+1]) * scale
         }
     }
 }
@@ -187,15 +203,15 @@ MeasureText :: proc {
     MeasureTextHandle
 }
 
-MeasureTextHandle :: proc(str: string, font: FontHandle, fontSize: int = 0) -> v2 {
+MeasureTextHandle :: proc(str: string, font: FontHandle, fontSize: f32 = 0) -> v2 {
     font := GetElement(renderCtx.fonts, font)
     return MeasureTextFont(str, font, fontSize)
 }
 
-MeasureTextFont :: proc(str: string, font: Font, fontSize: int = 0) -> v2 {
+MeasureTextFont :: proc(str: string, font: Font, fontSize: f32 = 0) -> v2 {
     fontSize := fontSize
 
-    if fontSize == 0 do fontSize = font.size
+    if fontSize == 0 do fontSize = f32(font.size)
     scale := f32(fontSize) / f32(font.size)
 
     posX := f32(0)
@@ -310,7 +326,7 @@ InitFontSDF :: proc(font: ^Font, data: []u8, fontSize: int) -> (bitmap: []i32, b
             advanceX = int(f32(advanceX) * scaleFactor),
         }
 
-        fmt.println(glyph.codepoint, glyph.offset)
+        // fmt.println(glyph.codepoint, glyph.offset)
 
         idx := GetCodepointIndex(rune(i))
         font.glyphData[idx] = glyph

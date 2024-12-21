@@ -459,7 +459,7 @@ DoLayout :: proc() {
         if node.preferredSize[.X].type == .Text ||
            node.preferredSize[.Y].type == .Text
         {
-            node.textSize = MeasureText(node.text, node.font, node.fontSize)
+            node.textSize = MeasureText(node.text, node.font, f32(node.fontSize))
             paddedSize := v2 {
                 f32(node.padding.left + node.padding.right),
                 f32(node.padding.top + node.padding.bot),
@@ -962,7 +962,7 @@ DrawNode :: proc(renderCtx: ^RenderContext, node: ^UINode) {
             node.text,
             pos,
             node.font,
-            node.fontSize,
+            f32(node.fontSize),
             color = node.textColor,
         )
     }

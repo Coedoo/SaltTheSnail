@@ -72,7 +72,7 @@ pixel vs_main(uint spriteId: SV_INSTANCEID, uint vertexId : SV_VERTEXID) {
     // 1 - for screen space (Y down)
     const float4 texUVS[2] = {
         float4(sp.texPos, sp.texPos + sp.texSize),
-        float4(sp.texPos.x, sp.texPos.y + sp.texSize.y, sp.texPos.x + sp.texPos.x, sp.texPos.y)
+        float4(sp.texPos.x, sp.texPos.y + sp.texSize.y, sp.texPos.x + sp.texSize.x, sp.texPos.y)
     };
 
     float4 tex = texUVS[screenSpace];
