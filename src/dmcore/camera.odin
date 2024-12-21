@@ -6,6 +6,7 @@ import "core:fmt"
 
 Camera :: struct {
     position: v3,
+    rotation: f32,
 
     orthoSize: f32,
 
@@ -27,7 +28,7 @@ CreateCamera :: proc(orthoSize, aspect:f32, near:f32 = 0.0001, far:f32 = 10000) 
 
 // @TODO: actual view matrix...
 GetViewMatrix :: proc(camera: Camera) -> mat4 {
-    view := math.mat4Translate(-camera.position)
+    view := math.mat4Translate(-camera.position) * math.mat4Rotate({0, 0, 1}, camera.rotation)
     return view
 }
 
@@ -73,7 +74,7 @@ GetVPMatrix :: proc(camera: Camera) -> mat4 {
                              -orthoHeight, orthoHeight, 
                               camera.near, camera.far)
 
-    view := math.mat4Translate(-camera.position)
+    view := GetViewMatrix(camera)
 
     return proj * view
 }
