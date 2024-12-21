@@ -45,6 +45,7 @@ Mesh :: struct {
 PerFrameData :: struct {
     VPMat: mat4,
     invVPMat: mat4,
+    screenSpace: i32,
 }
 
 InitRenderContext :: proc(ctx: ^RenderContext) -> ^RenderContext {
@@ -65,11 +66,11 @@ InitRenderContext :: proc(ctx: ^RenderContext) -> ^RenderContext {
     ctx.debugBatch = CreatePrimitiveBatch(ctx, 4086, PrimitiveVertexShaderSource)
     ctx.debugBatchScreen = CreatePrimitiveBatch(ctx, 4086, PrimitiveVertexScreenShaderSource)
 
-    ctx.defaultShaders[.Blit] = CompileShaderSource(ctx, BlitShaderSource)
-    ctx.defaultShaders[.ScreenSpaceRect] = CompileShaderSource(ctx, ScreenSpaceRectShaderSource)
-    ctx.defaultShaders[.Sprite] = CompileShaderSource(ctx, SpriteShaderSource)
-    ctx.defaultShaders[.SDFFont] = CompileShaderSource(ctx, SDFFontSource)
-    ctx.defaultShaders[.Grid] = CompileShaderSource(ctx, GridShaderSource)
+    ctx.defaultShaders[.Blit] = CompileShaderSource(ctx, "Blit", BlitShaderSource)
+    ctx.defaultShaders[.ScreenSpaceRect] = CompileShaderSource(ctx, "SSRect", ScreenSpaceRectShaderSource)
+    ctx.defaultShaders[.Sprite] = CompileShaderSource(ctx, "Sprite", SpriteShaderSource)
+    ctx.defaultShaders[.SDFFont] = CompileShaderSource(ctx, "SDFFont", SDFFontSource)
+    ctx.defaultShaders[.Grid] = CompileShaderSource(ctx, "Grid", GridShaderSource)
 
     ctx.frameSize = { defaultWindowWidth, defaultWindowHeight }
     ctx.camera = CreateCamera(5, f32(defaultWindowWidth)/f32(defaultWindowHeight))

@@ -119,7 +119,7 @@ main :: proc() {
 
             case dm.ShaderAssetDescriptor:
                 str := strings.string_from_ptr(raw_data(data), len(data))
-                asset.handle = cast(dm.Handle) dm.CompileShaderSource(engineData.renderCtx, str)
+                asset.handle = cast(dm.Handle) dm.CompileShaderSource(engineData.renderCtx, name, str)
 
             case dm.FontAssetDescriptor:
                 panic("FIX SUPPORT OF FONT ASSET LOADING")

@@ -157,11 +157,11 @@ EndFrame :: proc(ctx: ^RenderContext) {
     ctx.swapchain->Present(1, nil)
 }
 
-FlushCommands :: proc(using ctx: ^RenderContext) {
+FlushCommands :: proc(ctx: ^RenderContext) {
 
     viewport := d3d11.VIEWPORT {
         0, 0,
-        f32(frameSize.x), f32(frameSize.y),
+        f32(ctx.frameSize.x), f32(ctx.frameSize.y),
         0, 1,
     }
 
@@ -181,16 +181,17 @@ FlushCommands :: proc(using ctx: ^RenderContext) {
     c := cast(^PerFrameData) mapped.pData
     c.VPMat = proj * view
     c.invVPMat = glsl.inverse(proj * view)
+    c.screenSpace = 0
 
     ctx.deviceContext->Unmap(ctx.cameraConstBuff, 0)
     ctx.deviceContext->VSSetConstantBuffers(0, 1, &ctx.cameraConstBuff)
 
     shadersStack: sa.Small_Array(128, ShaderHandle)
 
-    for c in &commandBuffer.commands {
+    for c in &ctx.commandBuffer.commands {
         switch &cmd in c {
         case ClearColorCommand:
-            deviceContext->ClearRenderTargetView(ctx.ppRenderTargetSrc, transmute(^[4]f32) &cmd.clearColor)
+            ctx.deviceContext->ClearRenderTargetView(ctx.ppRenderTargetSrc, transmute(^[4]f32) &cmd.clearColor)
 
         case CameraCommand:
             view := GetViewMatrix(cmd.camera)
@@ -201,6 +202,7 @@ FlushCommands :: proc(using ctx: ^RenderContext) {
             c := cast(^PerFrameData) mapped.pData
             c.VPMat = proj * view
             c.invVPMat = glsl.inverse(proj * view)
+            c.screenSpace = 0
 
             ctx.deviceContext->Unmap(ctx.cameraConstBuff, 0)
             ctx.deviceContext->VSSetConstantBuffers(0, 1, &ctx.cameraConstBuff)
@@ -256,11 +258,31 @@ FlushCommands :: proc(using ctx: ^RenderContext) {
 
         case PushShaderCommand: sa.push(&shadersStack, cmd.shader)
         case PopShaderCommand:  sa.pop_back(&shadersStack)
+
+        case BeginScreenSpaceCommand:
+            DrawBatch(ctx, &ctx.defaultBatch)
+
+            scale := [3]f32{ 2.0 / f32(ctx.frameSize.x), -2.0 / f32(ctx.frameSize.y), 0}
+            mat := glsl.mat4Translate({-1, 1, 0}) * glsl.mat4Scale(scale)
+
+            mapped: d3d11.MAPPED_SUBRESOURCE
+            res := ctx.deviceContext->Map(ctx.cameraConstBuff, 0, .WRITE_DISCARD, nil, &mapped);
+            c := cast(^PerFrameData) mapped.pData
+            c.VPMat = mat
+            c.invVPMat = glsl.inverse(mat)
+            c.screenSpace = 1
+
+            ctx.deviceContext->Unmap(ctx.cameraConstBuff, 0)
+            ctx.deviceContext->VSSetConstantBuffers(0, 1, &ctx.cameraConstBuff)
+
+        case EndScreenSpaceCommand:
+            DrawBatch(ctx, &ctx.defaultBatch)
+            
         }
     }
 
     DrawBatch(ctx, &ctx.defaultBatch)
-    clear(&commandBuffer.commands)
+    clear(&ctx.commandBuffer.commands)
 
     // Post process
     ctx.deviceContext->IASetPrimitiveTopology(.TRIANGLESTRIP)
@@ -408,7 +430,7 @@ CreatePrimitiveBatch :: proc(ctx: ^RenderContext, maxCount: int, shaderSource: s
     }
 
     res := ctx.device->CreateBuffer(&desc, nil, &ctx.gpuVertBuffer)
-    ret.shader = CompileShaderSource(ctx, shaderSource);
+    ret.shader = CompileShaderSource(ctx, "Primitive Batch", shaderSource);
 
     // @HACK: I need to somehow have shader byte code in order to create input layout
     // But my current implementation doesn't store shader bytecode so I need to compile it 

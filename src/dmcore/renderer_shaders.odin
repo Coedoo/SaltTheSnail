@@ -10,5 +10,6 @@ DefaultShaderType :: enum {
 
 Shader :: struct {
     handle: ShaderHandle,
+    name: string,
     using backend: _Shader,
 }

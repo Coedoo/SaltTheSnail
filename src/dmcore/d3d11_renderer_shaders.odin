@@ -12,8 +12,9 @@ _Shader :: struct {
     pixelShader: ^d3d11.IPixelShader,
 }
 
-CompileShaderSource :: proc(renderCtx: ^RenderContext, source: string) -> ShaderHandle {
+CompileShaderSource :: proc(renderCtx: ^RenderContext, name, source: string) -> ShaderHandle {
     shader := CreateElement(&renderCtx.shaders)
+    shader.name = name
 
     if InitShaderSource(renderCtx, shader, source) {
         return shader.handle

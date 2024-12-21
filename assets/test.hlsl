@@ -76,24 +76,19 @@ pixel vs_main(uint spriteId: SV_INSTANCEID, uint vertexId : SV_VERTEXID) {
     };
 
     float4 tex = texUVS[screenSpace];
-    p.uv = float2(tex[i.x], tex[i.y]);
+    p.uv = float2(tex[i.x], tex[i.y]) * oneOverAtlasSize;
 
     p.color = sp.color;
 
     return p;
 }
 
+
 float4 ps_main(pixel p) : SV_TARGET
 {
-    // float2 uv = floor(uv) + min(frac(uv) / fwidth(uv), 1) - 0.5;
-    float2 uv = floor(p.uv) + smoothstep(0, 1, frac(p.uv) / fwidth(p.uv)) - 0.5;
+    float4 texS = tex.Sample(texSampler, p.uv);
+    float3 col = texS.rgb;
+    // col.xy += p.uv;
 
-    float4 texColor = tex.Sample(texSampler, uv * oneOverAtlasSize);
-
-    if (texColor.a == 0) discard;
-
-    // float4 c = float4(color.rgb * p.color.rgb, 1);
-    // return c;
-
-    return p.color * texColor;
+    return float4(col, 1);
 }

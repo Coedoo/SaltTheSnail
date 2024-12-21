@@ -18,6 +18,9 @@ Command :: union {
     PushShaderCommand,
     PopShaderCommand,
 
+    BeginScreenSpaceCommand,
+    EndScreenSpaceCommand,
+
     // SetShaderDataCommand,
 }
 
@@ -62,6 +65,9 @@ SetShaderDataCommand :: struct {
     data: rawptr,
     dataSize: int,
 }
+
+BeginScreenSpaceCommand :: struct {}
+EndScreenSpaceCommand :: struct {}
 
 ClearColor :: proc(color: color) {
     ClearColorCtx(renderCtx, color)
@@ -131,15 +137,12 @@ DrawSpriteCtx :: proc(ctx: ^RenderContext, sprite: Sprite, position: v2,
 
     size := GetSpriteSize(sprite)
 
-    pivot := sprite.origin
-    pivot.y = -pivot.y + 1
-
     // @TODO: flip will be incorrect for every sprite that doesn't
     // use {0.5, 0.5} as origin
     flip := v2{sprite.flipX ? -1 : 1, sprite.flipY ? -1 : 1}
 
     cmd.position = position
-    cmd.pivot = pivot
+    cmd.pivot = sprite.origin
     cmd.size = size * flip
     cmd.texSource = {texPos.x, texPos.y, sprite.textureSize.x, sprite.textureSize.y}
     cmd.rotation = rotation
@@ -289,4 +292,16 @@ SetShaderData :: proc(slot: int, data: any) {
     //     copiedDataPtr,
     //     info.size,
     // })
+}
+
+BeginScreenSpace :: proc() {
+    append(&renderCtx.commandBuffer.commands, BeginScreenSpaceCommand{})
+}
+
+
+EndScreenSpace :: proc() {
+    append(&renderCtx.commandBuffer.commands, EndScreenSpaceCommand{})
+
+    // TODO: cameras stack or something
+    SetCamera(renderCtx.camera)
 }

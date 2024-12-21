@@ -127,16 +127,17 @@ PPData :: struct #align(16) {
 PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
     dm.RegisterAsset("background.png", dm.TextureAssetDescriptor{})
     dm.RegisterAsset("assets.png", dm.TextureAssetDescriptor{})
-    dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{})
-    dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{})
-    dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{})
-    dm.RegisterAsset("orange hit hard 12.wav", dm.SoundAssetDescriptor{})
-    dm.RegisterAsset("orange hit hard 1.wav", dm.SoundAssetDescriptor{})
-    dm.RegisterAsset("orange hit hard 5.wav", dm.SoundAssetDescriptor{})
-    dm.RegisterAsset("punch 5.wav", dm.SoundAssetDescriptor{})
-    dm.RegisterAsset("punch 1.wav", dm.SoundAssetDescriptor{})
-    dm.RegisterAsset("punch 3.wav", dm.SoundAssetDescriptor{})
-    dm.RegisterAsset("punch 6.wav", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("test.hlsl", dm.ShaderAssetDescriptor{})
+    // dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{})
+    // dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{})
+    // dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{})
+    // dm.RegisterAsset("orange hit hard 12.wav", dm.SoundAssetDescriptor{})
+    // dm.RegisterAsset("orange hit hard 1.wav", dm.SoundAssetDescriptor{})
+    // dm.RegisterAsset("orange hit hard 5.wav", dm.SoundAssetDescriptor{})
+    // dm.RegisterAsset("punch 5.wav", dm.SoundAssetDescriptor{})
+    // dm.RegisterAsset("punch 1.wav", dm.SoundAssetDescriptor{})
+    // dm.RegisterAsset("punch 3.wav", dm.SoundAssetDescriptor{})
+    // dm.RegisterAsset("punch 6.wav", dm.SoundAssetDescriptor{})
 
     // dm.RegisterAsset("Kenney Pixel.ttf", dm.FontAssetDescriptor{
     //     fontType = .SDF,
@@ -184,10 +185,10 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
 
     gameState.font = dm.LoadFontSDF(platform.renderCtx, "../Assets/Kenney Pixel.ttf", 50)
 
-    gameState.ppData.brightness = 1.36
-    gameState.blurPP = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Blur.hlsl"))
-    gameState.pp1 = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("PPEffect.hlsl"), gameState.ppData)
-    dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Vignette.hlsl"))
+    // gameState.ppData.brightness = 1.36
+    // gameState.blurPP = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Blur.hlsl"))
+    // gameState.pp1 = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("PPEffect.hlsl"), gameState.ppData)
+    // dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Vignette.hlsl"))
 
     // 
 
@@ -278,15 +279,17 @@ HandleButton :: proc(pressed: ^bool, buttonPos: v2, mousePos: v2) -> bool {
 GameUpdate : dm.GameUpdate : proc(state: rawptr) {
     gameState = cast(^GameState) state
 
+    // dm.renderCtx.camera.rotation += dm.time.deltaTime * 0.1
+
     mouse := dm.ToV2(dm.ScreenToWorldSpace(dm.input.mousePos))
 
-    if dm.muiBeginWindow(dm.mui, "PP", {10, 10, 110, 90}) {
-        dm.muiLabel(dm.mui, fmt.tprint("FlipTimer", gameState.flipTimer))
-        dm.muiLabel(dm.mui, fmt.tprint("Flip Availble", gameState.flipAvailble))
-        dm.muiLabel(dm.mui, fmt.tprint("Flip Active", gameState.flipActive))
+    // if dm.muiBeginWindow(dm.mui, "PP", {10, 10, 110, 90}) {
+    //     dm.muiLabel(dm.mui, fmt.tprint("FlipTimer", gameState.flipTimer))
+    //     dm.muiLabel(dm.mui, fmt.tprint("Flip Availble", gameState.flipAvailble))
+    //     dm.muiLabel(dm.mui, fmt.tprint("Flip Active", gameState.flipActive))
 
-        dm.muiEndWindow(dm.mui);
-    }
+    //     dm.muiEndWindow(dm.mui);
+    // }
 
     startButtonPressed := HandleButton(&gameState.startBtnPressed, StartButtonPos, mouse)
 
@@ -499,40 +502,143 @@ GameRender : dm.GameRender : proc(state: rawptr) {
         FlipButtonPos
     )
 
-    dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5v", gameState.score), gameState.font, {280, 280}, color = {1, 1, 1, 1}, fontSize = 70)
-    dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5.2f",gameState.timeLeft), gameState.font, {525, 280}, color = {1, 1, 1, 1}, fontSize = 70)
 
-
-    nonPressedOffset :: v2{3, 10}
-    pressedOffset:: v2{3, 3}
-
-    p := dm.WorldToScreenPoint(StartButtonPos)
-    dm.DrawTextCentered(
-        dm.renderCtx, 
-        "START", 
-        gameState.font, 
-        dm.ToV2(p) + (gameState.startBtnPressed ? pressedOffset : nonPressedOffset),
-        color = {1, 1, 1, 1}, 
-        fontSize = 20
-    )
-
-    flipPressed := gameState.flipBtnPressed || gameState.flipAvailble == false
-    p = dm.WorldToScreenPoint(FlipButtonPos)
-    dm.DrawTextCentered(
+    text := "1.abCDeF\n2.LOrem\n3.ipsuM"
+    dm.DrawText(
         dm.renderCtx,
-        "FLIP",
+        text,
         gameState.font,
-        dm.ToV2(p) + (flipPressed ? pressedOffset : nonPressedOffset),
+        {0, 0},
         color = {1, 1, 1, 1},
-        fontSize = 20
+        fontSize = 1
     )
+
+    dm.BeginScreenSpace()
+    p := dm.WorldToScreenPoint({-3, 0})
+    dm.DrawText(
+        dm.renderCtx,
+        text,
+        gameState.font,
+        dm.ToV2(p),
+        color = {1, 1, 1, 1},
+        fontSize = 30
+    )
+
+    spr := gameState.mollyHitSprite
+    spr.scale = 100
+    dm.DrawSprite(spr, {100, 100})
+
+    dm.EndScreenSpace()
+
+    // dm.DrawTextCentered(
+    //     dm.renderCtx,
+    //     "FLIP\nN",
+    //     gameState.font,
+    //     // dm.ToV2(p) + (flipPressed ? pressedOffset : nonPressedOffset),
+    //     FlipButtonPos,
+    //     color = {1, 1, 1, 1},
+    //     fontSize = 1
+    // )
+
+    // dm.BeginScreenSpace()
+    //     dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5v", gameState.score), gameState.font, {280, 280}, color = {1, 1, 1, 1}, fontSize = 70)
+    //     dm.DrawTextCentered(dm.renderCtx, fmt.tprintf("%5.2f",gameState.timeLeft), gameState.font, {525, 280}, color = {1, 1, 1, 1}, fontSize = 70)
+    // dm.EndScreenSpace()
+
+
+    // nonPressedOffset :: v2{3, 10}
+    // pressedOffset:: v2{3, 3}
+
+    // p := dm.WorldToScreenPoint(StartButtonPos)
+    // dm.DrawTextCentered(
+    //     dm.renderCtx, 
+    //     "START", 
+    //     gameState.font, 
+    //     dm.ToV2(p) + (gameState.startBtnPressed ? pressedOffset : nonPressedOffset),
+    //     color = {1, 1, 1, 1}, 
+    //     fontSize = 20
+    // )
+
+    // flipPressed := gameState.flipBtnPressed || gameState.flipAvailble == false
+    // p = dm.WorldToScreenPoint(FlipButtonPos)
+    // dm.DrawTextCentered(
+    //     dm.renderCtx,
+    //     "FLIP\nN",
+    //     gameState.font,
+    //     dm.ToV2(p) + (flipPressed ? pressedOffset : nonPressedOffset),
+    //     color = {1, 1, 1, 1},
+    //     fontSize = 50
+    // )
 
     for i in 0..<gameState.salts.len {
         s := &gameState.salts.data[i]
         dm.DrawSprite(gameState.saltSprite, s.position, rotation = s.rotation)
     }
 
+
     dm.UpdateAndDrawParticleSystem(&gameState.saltParticles)
+
+    dm.PushShader(cast(dm.ShaderHandle) dm.GetAsset("test.hlsl"))
+
+    // // World Space
+    {
+        cmd: dm.DrawRectCommand
+
+        size := v2{1, 1}
+
+        // texture := dm.renderCtx.whiteTexture
+        // texSize := dm.GetTextureSize(texture)
+        sp := gameState.mollyHitSprite
+        // sp := gameState.mollySprite
+
+        texture := sp.texture
+
+
+        cmd.position = {2, 2}
+        cmd.size = size
+        cmd.texSource = {sp.texturePos.x, sp.texturePos.y, sp.textureSize.x, sp.textureSize.y}
+        cmd.tint = {1, 1, 1, 1}
+        cmd.pivot = sp.origin
+        cmd.rotation = f32(dm.time.gameTime)
+
+        cmd.texture = texture
+        // cmd.shader = dm.renderCtx.defaultShaders[.Sprite]
+
+        append(&dm.renderCtx.commandBuffer.commands, cmd)
+    }
+
+    dm.PopShader()
+
+    // Screen Space
+    // dm.BeginScreenSpace()
+    // {
+    //     cmd: dm.DrawRectCommand
+
+    //     size := v2{100, 100}
+
+    //     // texture := dm.renderCtx.whiteTexture
+    //     // texSize := dm.GetTextureSize(texture)
+    //     sp := gameState.mollyHitSprite
+    //     // sp := gameState.mollySprite
+
+    //     texture := sp.texture
+
+
+    //     cmd.position = {300, 300}
+    //     cmd.size = size
+    //     cmd.texSource = {sp.texturePos.x, sp.texturePos.y, sp.textureSize.x, sp.textureSize.y}
+    //     cmd.tint = {1, 1, 1, 1}
+    //     cmd.pivot = sp.origin
+    //     cmd.rotation = f32(dm.time.gameTime)
+
+    //     cmd.texture = texture
+    //     // cmd.shader =  shader
+
+    //     append(&dm.renderCtx.commandBuffer.commands, cmd)
+    // }
+    // dm.EndScreenSpace()
+
+    // dm.PopShader()
 
     dm.DrawGrid()
 }
