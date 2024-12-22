@@ -50,9 +50,15 @@ AssetData :: struct {
     descriptor: AssetDescriptor
 }
 
+LoadEntry :: struct {
+    key: string,
+    name: string,
+}
+
 Assets :: struct {
     assetsMap: map[string]AssetData,
-    toLoad: [dynamic]string
+
+    loadQueue: [dynamic]LoadEntry
 }
 
 RegisterAsset :: proc(fileName: string, desc: AssetDescriptor, key: string = "") {
@@ -81,7 +87,7 @@ RegisterAssetCtx :: proc(assets: ^Assets, fileName: string, desc: AssetDescripto
         descriptor = desc,
     }
 
-    append(&assets.toLoad, clonedName)
+    append(&assets.loadQueue, LoadEntry{clonedKey, clonedName})
 }
 
 GetAssetData :: proc(fileName: string) -> ^AssetData {
@@ -91,7 +97,6 @@ GetAssetData :: proc(fileName: string) -> ^AssetData {
 GetAssetDataCtx :: proc(assets: ^Assets, fileName: string) -> ^AssetData {
     return &assets.assetsMap[fileName]
 }
-
 
 GetAsset :: proc(fileName: string) -> Handle {
     return GetAssetCtx(assets, fileName)

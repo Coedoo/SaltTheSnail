@@ -41,8 +41,8 @@ SetWindowSize :: proc(width, height: int) {
 FileLoadedCallback :: proc(data: []u8) {
     assert(data != nil)
 
-    assetName := engineData.assets.toLoad[assetsLoadingState.loadingIndex]
-    asset := &engineData.assets.assetsMap[assetName]
+    queueEntry := engineData.assets.loadQueue[assetsLoadingState.loadingIndex]
+    asset := &engineData.assets.assetsMap[queueEntry.key]
 
     switch desc in asset.descriptor {
     case dm.TextureAssetDescriptor:
@@ -51,7 +51,7 @@ FileLoadedCallback :: proc(data: []u8) {
 
     case dm.ShaderAssetDescriptor:
         str := strings.string_from_ptr(raw_data(data), len(data))
-        asset.handle = cast(dm.Handle) dm.CompileShaderSource(engineData.renderCtx, assetName, str)
+        asset.handle = cast(dm.Handle) dm.CompileShaderSource(engineData.renderCtx, queueEntry.name, str)
         // delete(data)
 
     case dm.FontAssetDescriptor:
@@ -71,7 +71,7 @@ FileLoadedCallback :: proc(data: []u8) {
     assetsLoadingState.loadingIndex += 1
 
     if assetsLoadingState.loadingIndex < assetsLoadingState.maxCount {
-        assetsLoadingState.nowLoading = engineData.assets.toLoad[assetsLoadingState.loadingIndex]
+        assetsLoadingState.nowLoading = engineData.assets.loadQueue[assetsLoadingState.loadingIndex].name
     }
     else {
         assetsLoadingState.nowLoading = ""
@@ -125,7 +125,7 @@ main :: proc() {
 
     assetsLoadingState.maxCount = len(engineData.assets.assetsMap)
     if(assetsLoadingState.maxCount > 0) {
-        assetsLoadingState.nowLoading = engineData.assets.toLoad[0]
+        assetsLoadingState.nowLoading = engineData.assets.loadQueue[0].name
     }
 
     LoadNextAsset()
