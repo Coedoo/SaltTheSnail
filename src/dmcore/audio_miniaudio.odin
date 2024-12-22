@@ -101,3 +101,7 @@ _SetVolume :: proc(sound: ^Sound, volume: f32) {
 _SetLooping :: proc(sound: ^Sound, looping: bool) {
     ma.sound_set_looping(&sound.maSound, b32(looping))
 }
+
+_SetPan :: proc(sound: ^Sound, value: f32) {
+    ma.sound_set_pan(&sound.maSound, value)
+}

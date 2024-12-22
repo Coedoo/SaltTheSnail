@@ -80,6 +80,14 @@ GetVPMatrix :: proc(camera: Camera) -> mat4 {
     return proj * view
 }
 
+GetCameraSize :: proc(camera: Camera) -> (size: v2) {
+    size.y = camera.orthoSize * 2
+    size.x = camera.aspect * size.y
+
+    return
+}
+
+
 WorldToScreenPoint :: proc(pos: v2) -> iv2 {
     p := GetVPMatrix(renderCtx.camera) * v4{pos.x, pos.y, 0, 1}
     p.xyz /= p.w

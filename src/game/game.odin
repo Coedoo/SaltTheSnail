@@ -55,10 +55,13 @@ GameState :: struct {
     ppData: PPData,
 
     blurPP: dm.PPHandle,
+
+    music: dm.SoundHandle,
+    hitSounds: sa.Small_Array(16, dm.SoundHandle),
 }
 gameState: ^GameState
 
-GameTime :: 60
+GameTime :: 76
 
 HoleSize :: v2{1, 1}
 HoleColliderOffset :: v2{0, -0.27}
@@ -128,6 +131,12 @@ PPData :: struct #align(16) {
     brightness: f32,
 }
 
+HitSoundsNames := [?]string{
+    "orange hit hard 1.wav",
+    "orange hit hard 5.wav",
+    "punch 5.wav",
+    "punch 6.wav",
+}
 
 @export
 PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
@@ -140,13 +149,23 @@ PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
     dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{})
     dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{})
     dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{})
+
+
+
+    for name, i in HitSoundsNames {
+        dm.RegisterAsset(name, dm.SoundAssetDescriptor{}, key = fmt.tprintf("hit %v", i))
+    }
+
     // dm.RegisterAsset("orange hit hard 12.wav", dm.SoundAssetDescriptor{})
     // dm.RegisterAsset("orange hit hard 1.wav", dm.SoundAssetDescriptor{})
     // dm.RegisterAsset("orange hit hard 5.wav", dm.SoundAssetDescriptor{})
     // dm.RegisterAsset("punch 5.wav", dm.SoundAssetDescriptor{})
     // dm.RegisterAsset("punch 1.wav", dm.SoundAssetDescriptor{})
     // dm.RegisterAsset("punch 3.wav", dm.SoundAssetDescriptor{})
-    dm.RegisterAsset("punch 6.wav", dm.SoundAssetDescriptor{})
+    // dm.RegisterAsset("punch 6.wav", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("8-bit snel.flac", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("click.wav", dm.SoundAssetDescriptor{})
+    dm.RegisterAsset("unclick.wav", dm.SoundAssetDescriptor{})
 
     dm.platform.SetWindowSize(int(windowSize.x), int(windowSize.y))
 }
@@ -199,7 +218,7 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
 
     gameState.saltParticles = dm.DefaultParticleSystem
     ps := &gameState.saltParticles
-    
+
     ps.emitRate = 0
     ps.lifetime = 2
     ps.color = dm.color{1, 1, 1, 0.7}
@@ -211,6 +230,11 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     ps.gravity = {0, -20}
 
     dm.InitParticleSystem(&gameState.saltParticles)
+
+    ///
+
+    gameState.music = cast(dm.SoundHandle) dm.GetAsset("8-bit snel.flac")
+    dm.SetVolume(gameState.music, 0.3)
 }
 
 ResetGame :: proc() {
@@ -223,6 +247,10 @@ ResetGame :: proc() {
     gameState.flipAvailble = false
     gameState.flipActive = false
 
+    gameState.saltParticles.gravity.y = -abs(gameState.saltParticles.gravity.y)
+
+    // dm.StopSound(gameState.music)
+
     sa.clear(&gameState.salts)
 }
 
@@ -232,12 +260,15 @@ StartGame :: proc() {
     gameState.score = 0
 
     gameState.flipTimer = FlipInterval
+
+    dm.PlaySound(gameState.music)
 }
 
 DifficultyCurve :: proc() -> f32{
+    // https://www.desmos.com/calculator/at0vzlq4ep
     maxPoint :: 0.9
-    maxValue :: 0.15
-    curv :: 1.5
+    maxValue :: 0.2
+    curv :: 0.8
 
     t := 1 - (gameState.timeLeft / GameTime)
 
@@ -245,8 +276,8 @@ DifficultyCurve :: proc() -> f32{
         return maxValue
     }
 
-    curvature: f32 = -(maxValue - 1) / math.pow(f32(maxPoint), curv)
-    return -curvature * math.pow(t, curv) + 1
+    curvature: f32 = (maxValue - 1) / math.pow(f32(maxPoint), curv)
+    return curvature * math.pow(t, curv) + 1
 }
 
 SwitchHoleState :: proc(hole: ^HoleData, state: HoleState) {
@@ -266,6 +297,7 @@ HandleButton :: proc(pressed: ^bool, buttonPos: v2, mousePos: v2) -> bool {
 
     if mouseBtn == .JustReleased {
         if pressed^ {
+            dm.PlaySound(cast(dm.SoundHandle) dm.GetAsset("unclick.wav"))
             pressed^ = false
             return inBounds
         }
@@ -273,6 +305,7 @@ HandleButton :: proc(pressed: ^bool, buttonPos: v2, mousePos: v2) -> bool {
 
     if mouseBtn == .JustPressed {
         if inBounds {
+            dm.PlaySound(cast(dm.SoundHandle) dm.GetAsset("click.wav"))
             pressed^ = true
         }
     }
@@ -307,6 +340,7 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
     }
 
     if startButtonPressed {
+        dm.StopSound(gameState.music)
         ResetGame()
     }
 
@@ -402,15 +436,21 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
                 hole := &gameState.holes[s.targetedHole]
                 hole.targeted = false
 
-                gameState.score += 10
+                gameState.score += 10 * (2 if gameState.flipActive else 1)
 
                 dm.SpawnParticles(&gameState.saltParticles, 20, 
                     atPosition = hole.targetPos + {0, 0.3},
                     additionalSpeed = cast(v2) glsl.normalize(s.end - s.start) * 5
                 )
 
-                sound := cast(dm.SoundHandle) dm.GetAsset("punch 6.wav")
-                dm.SetVolume(sound, 0.5)
+                idx := rand.uint32() % len(HitSoundsNames)
+                sound := cast(dm.SoundHandle) dm.GetAsset(fmt.tprintf("hit %v", idx))
+                // fmt.println(idx, sound)
+
+                camSize := dm.GetCameraSize(dm.renderCtx.camera)
+
+                dm.SetPan(sound, hole.targetPos.x / camSize.x * (gameState.flipActive ? -1 : 1))
+                dm.SetVolume(sound, 0.4)
                 dm.PlaySound(sound)
 
                 SwitchHoleState(hole, .Hit)
@@ -436,6 +476,8 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
             gameState.flipAnimActive = true
             gameState.flipAnimTimer = 0
             gameState.flipAnimDir = 1
+
+            gameState.saltParticles.gravity.y = abs(gameState.saltParticles.gravity.y)
         }
     }
     else {
@@ -448,6 +490,8 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
                 gameState.flipAnimActive = true
                 gameState.flipAnimTimer = 0
                 gameState.flipAnimDir = -1
+
+                gameState.saltParticles.gravity.y = -abs(gameState.saltParticles.gravity.y)
             }
             else {
                 gameState.flipAvailble = true

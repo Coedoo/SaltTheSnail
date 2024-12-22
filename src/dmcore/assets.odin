@@ -39,6 +39,7 @@ AssetDescriptor :: union {
 
 AssetData :: struct {
     fileName: string,
+    alias: string,
 
     fileData: []u8,
 
@@ -54,18 +55,28 @@ Assets :: struct {
     toLoad: [dynamic]string
 }
 
-RegisterAsset :: proc(fileName: string, desc: AssetDescriptor) {
-    RegisterAssetCtx(assets, fileName, desc)
+RegisterAsset :: proc(fileName: string, desc: AssetDescriptor, key: string = "") {
+    RegisterAssetCtx(assets, fileName, desc, key)
 }
 
-RegisterAssetCtx :: proc(assets: ^Assets, fileName: string, desc: AssetDescriptor) {
+RegisterAssetCtx :: proc(assets: ^Assets, fileName: string, desc: AssetDescriptor, key: string = "") {
     if fileName in assets.assetsMap {
         fmt.eprintln("Duplicated asset file name:", fileName, ". Skipping...")
         return
     }
 
+
     clonedName := strings.clone(fileName)
-    assets.assetsMap[clonedName] = AssetData {
+
+    clonedKey: string
+    if key == "" {
+        clonedKey = clonedName
+    }
+    else {
+        clonedKey = strings.clone(key)
+    }
+
+    assets.assetsMap[clonedKey] = AssetData {
         fileName = clonedName,
         descriptor = desc,
     }

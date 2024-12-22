@@ -99,7 +99,7 @@ main :: proc() {
                 continue
             }
 
-            path := strings.concatenate({dm.ASSETS_ROOT, name}, context.temp_allocator)
+            path := strings.concatenate({dm.ASSETS_ROOT, asset.fileName}, context.temp_allocator)
             fmt.println("Loading asset at path:", path)
             data, ok := os.read_entire_file(path, context.allocator)
 

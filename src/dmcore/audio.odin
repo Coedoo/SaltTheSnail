@@ -87,3 +87,12 @@ SetLoopingCtx :: proc(audio: ^Audio, handle: SoundHandle, looping: bool) {
 
     sound._looping = looping
 }
+
+SetPan :: proc(handle: SoundHandle, value: f32) {
+    sound, ok := GetElementPtr(audio.sounds, handle)
+    if ok == false {
+        return
+    }
+
+    _SetPan(sound, value)
+}
