@@ -140,12 +140,17 @@ step :: proc (delta: f32) -> bool {
     if assetsLoadingState.finishedLoading == false {
         if assetsLoadingState.nowLoading != "" {
             dm.ClearColor({0.1, 0.1, 0.1, 1})
+            dm.BeginScreenSpace()
 
             pos := dm.ToV2(engineData.renderCtx.frameSize)
             pos.x /= 2
             pos.y -= 80
             dm.DrawTextCentered(
-                fmt.tprintf("Loading: %v [%v/%v]", assetsLoadingState.nowLoading, assetsLoadingState.loadedCount + 1, assetsLoadingState.maxCount),
+                fmt.tprintf("Loading: %v [%v/%v]", 
+                    assetsLoadingState.nowLoading, 
+                    assetsLoadingState.loadedCount + 1, 
+                    assetsLoadingState.maxCount
+                ),
                 pos
             )
 
@@ -156,6 +161,7 @@ step :: proc (delta: f32) -> bool {
                 fontSize = 30,
             )
 
+            dm.EndScreenSpace()
             dm.FlushCommands(engineData.renderCtx)
         }
         return true

@@ -51,6 +51,7 @@ FlushCommands :: proc(ctx: ^RenderContext) {
     frameData: PerFrameData
     frameData.VPMat = proj * view
     frameData.invVPMat = glsl.inverse(frameData.VPMat)
+    frameData.screenSpace = 0
 
     gl.BindBuffer(gl.UNIFORM_BUFFER, ctx.perFrameDataBuffer)
     gl.BufferSubData(gl.UNIFORM_BUFFER, 0, size_of(PerFrameData), &frameData)
@@ -71,6 +72,7 @@ FlushCommands :: proc(ctx: ^RenderContext) {
 
             frameData.VPMat = proj * view
             frameData.invVPMat = glsl.inverse(frameData.VPMat)
+            frameData.screenSpace = 0
 
             gl.BindBuffer(gl.UNIFORM_BUFFER, ctx.perFrameDataBuffer)
             gl.BufferSubData(gl.UNIFORM_BUFFER, 0, size_of(PerFrameData), &frameData)
@@ -119,6 +121,17 @@ FlushCommands :: proc(ctx: ^RenderContext) {
         case PopShaderCommand:  sa.pop_back(&shadersStack)
         case BeginScreenSpaceCommand:
             DrawBatch(ctx, &ctx.defaultBatch)
+
+            scale := [3]f32{ 2.0 / f32(ctx.frameSize.x), -2.0 / f32(ctx.frameSize.y), 0}
+            mat := glsl.mat4Translate({-1, 1, 0}) * glsl.mat4Scale(scale)
+
+            frameData.VPMat = mat
+            frameData.invVPMat = glsl.inverse(mat)
+            frameData.screenSpace = 1
+
+            gl.BindBuffer(gl.UNIFORM_BUFFER, ctx.perFrameDataBuffer)
+            gl.BufferSubData(gl.UNIFORM_BUFFER, 0, size_of(PerFrameData), &frameData)
+            gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
 
         case EndScreenSpaceCommand:
             DrawBatch(ctx, &ctx.defaultBatch)
