@@ -8,6 +8,7 @@ import "core:math/linalg/glsl"
 
 import "core:fmt"
 
+BlitShaderSource := #load("shaders/glsl/Blit.glsl", string)
 ScreenSpaceRectShaderSource := #load("shaders/glsl/ScreenSpaceRect.glsl", string)
 SpriteShaderSource := #load("shaders/glsl/Sprite.glsl", string)
 SDFFontSource := #load("shaders/glsl/SDFFont.glsl", string)
@@ -116,6 +117,11 @@ FlushCommands :: proc(ctx: ^RenderContext) {
 
         case PushShaderCommand: sa.push(&shadersStack, cmd.shader)
         case PopShaderCommand:  sa.pop_back(&shadersStack)
+        case BeginScreenSpaceCommand:
+            DrawBatch(ctx, &ctx.defaultBatch)
+
+        case EndScreenSpaceCommand:
+            DrawBatch(ctx, &ctx.defaultBatch)
 
         }
 

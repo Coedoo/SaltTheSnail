@@ -9,7 +9,7 @@ _Shader :: struct {
     shaderID: gl.Program
 }
 
-CompileShaderSource :: proc(renderCtx: ^RenderContext, source: string) -> ShaderHandle {
+CompileShaderSource :: proc(renderCtx: ^RenderContext, name, source: string) -> ShaderHandle {
     @static header := "#version 300 es\n"
 
     vertShader := gl.CreateShader(gl.VERTEX_SHADER)
@@ -51,6 +51,7 @@ CompileShaderSource :: proc(renderCtx: ^RenderContext, source: string) -> Shader
 
     shader := CreateElement(&renderCtx.shaders)
     shader.backend.shaderID = shaderProg
+    shader.name = name
 
     return shader.handle
 }

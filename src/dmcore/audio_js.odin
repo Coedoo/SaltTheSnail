@@ -8,8 +8,6 @@ foreign import audio "audio"
 foreign audio {
     Load :: proc "c" (dataPtr: rawptr, dataLen: int) ---
     Play :: proc "c" (dataPtr: rawptr, volume: f32) ---
-    jsSetVolume :: proc "c" (dataPtr: rawptr, volume: f32) ---
-    jsSetLooping :: proc "c" (dataPtr: rawptr, volume: bool) ---
 }
 
 
@@ -45,14 +43,18 @@ _PlaySound :: proc(audio: ^Audio, handle: SoundHandle) {
 
 _SetVolume :: proc(sound: ^Sound, volume: f32) {
     sound._volume = volume
-    jsSetVolume(sound.ptr, volume)
+    // jsSetVolume(sound.ptr, volume)
 }
 
 _SetLooping :: proc(sound: ^Sound, looping: bool) {
     sound._looping = looping
-    jsSetLooping(sound.ptr, looping)
+    // jsSetLooping(sound.ptr, looping)
 }
 
 
 _StopSound :: proc(audio: ^Audio, handle: SoundHandle) {
+}
+
+_SetPan :: proc(audio: ^Sound, value: f32) {
+    
 }

@@ -146,10 +146,11 @@ PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
     // dm.RegisterAsset("textTest.hlsl", dm.ShaderAssetDescriptor{})
     dm.RegisterAsset("Kenney Pixel.ttf", dm.FontAssetDescriptor{.SDF, 50})
 
-    dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{})
-    dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{})
-    dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{})
-
+    when ODIN_OS == .Windows {
+        dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{})
+        dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{})
+        dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{})
+    }
 
 
     for name, i in HitSoundsNames {

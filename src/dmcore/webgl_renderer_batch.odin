@@ -17,8 +17,7 @@ InitRectBatch :: proc(renderCtx: ^RenderContext, batch: ^RectBatch, count: int) 
 
     batch.backend.buffer = gl.CreateBuffer()
     gl.BindBuffer(gl.ARRAY_BUFFER, batch.backend.buffer)
-    gl.BufferData(gl.ARRAY_BUFFER, count * size_of(RectBatchEntry),
-                  nil, gl.DYNAMIC_DRAW)
+    gl.BufferData(gl.ARRAY_BUFFER, count * size_of(RectBatchEntry), nil, gl.DYNAMIC_DRAW)
 
     // layout (location = 0) in vec2 aPos;
     // layout (location = 1) in vec2 aSize;

@@ -26,8 +26,16 @@ assetsLoadingState: struct {
     loadingIndex: int,
 }
 
-SetWindowSize :: proc(width, height: int) {
+foreign import wasmUtilities "utility"
+foreign wasmUtilities {
+    SetCanvasSize :: proc "c" (width, height: int) ---
+}
 
+SetWindowSize :: proc(width, height: int) {
+    engineData.renderCtx.frameSize.x = i32(width)
+    engineData.renderCtx.frameSize.y = i32(height)
+
+    SetCanvasSize(width, height)
 }
 
 FileLoadedCallback :: proc(data: []u8) {
@@ -43,11 +51,12 @@ FileLoadedCallback :: proc(data: []u8) {
 
     case dm.ShaderAssetDescriptor:
         str := strings.string_from_ptr(raw_data(data), len(data))
-        asset.handle = cast(dm.Handle) dm.CompileShaderSource(engineData.renderCtx, str)
+        asset.handle = cast(dm.Handle) dm.CompileShaderSource(engineData.renderCtx, assetName, str)
         // delete(data)
 
     case dm.FontAssetDescriptor:
-        panic("FIX SUPPORT OF FONT ASSET LOADING")
+        // panic("FIX SUPPORT OF FONT ASSET LOADING")
+        asset.handle = dm.LoadFontSDF(engineData.renderCtx, data, desc.fontSize)
 
     case dm.RawFileAssetDescriptor:
         asset.fileData = data
@@ -136,17 +145,13 @@ step :: proc (delta: f32) -> bool {
             pos.x /= 2
             pos.y -= 80
             dm.DrawTextCentered(
-                engineData.renderCtx, 
                 fmt.tprintf("Loading: %v [%v/%v]", assetsLoadingState.nowLoading, assetsLoadingState.loadedCount + 1, assetsLoadingState.maxCount),
-                dm.LoadDefaultFont(engineData.renderCtx), 
                 pos
             )
 
             pos.y += 40
             dm.DrawTextCentered(
-                engineData.renderCtx,
                 "Made with #NoEngine",
-                dm.LoadDefaultFont(engineData.renderCtx), 
                 pos,
                 fontSize = 30,
             )
