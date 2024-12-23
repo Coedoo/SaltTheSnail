@@ -7,7 +7,7 @@ cbuffer globalUniforms: register(b0) {
     float time;
 }
 
-cbuffer globalUniforms: register(b1) {
+cbuffer uniforms: register(b1) {
     float brightness;
 }
 

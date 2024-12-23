@@ -51,10 +51,11 @@ GameState :: struct {
     score: int,
     timeLeft: f32,
 
-    pp1: dm.PPHandle,
-    ppData: PPData,
+    crtPP: dm.PostProcess,
+    crtPPData: PPData,
 
-    blurPP: dm.PPHandle,
+    blurPP: dm.PostProcess,
+    vignettePP: dm.PostProcess,
 
     music: dm.SoundHandle,
     hitSounds: sa.Small_Array(16, dm.SoundHandle),
@@ -147,9 +148,9 @@ PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
     dm.RegisterAsset("Kenney Pixel.ttf", dm.FontAssetDescriptor{.SDF, 50})
 
     when ODIN_OS == .Windows {
-        dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{})
-        dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{})
-        dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{})
+        dm.RegisterAsset("PPEffect.hlsl", dm.ShaderAssetDescriptor{}, key = "PPEffect")
+        dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{}, key = "Blur")
+        dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{}, key = "Vignette")
     }
 
 
@@ -210,10 +211,10 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     // gameState.font = dm.LoadFontSDF(platform.renderCtx, "../Assets/Kenney Pixel.ttf", 50)
     gameState.font = cast(dm.FontHandle) dm.GetAsset("Kenney Pixel.ttf")
 
-    gameState.ppData.brightness = 1.36
-    gameState.blurPP = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Blur.hlsl"))
-    gameState.pp1 = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("PPEffect.hlsl"), gameState.ppData)
-    dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Vignette.hlsl"))
+    gameState.blurPP = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Blur"))
+    gameState.crtPP = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("PPEffect"), gameState.crtPPData)
+    gameState.crtPPData.brightness = 1.36
+    gameState.vignettePP = dm.CreatePostProcess(cast(dm.ShaderHandle) dm.GetAsset("Vignette"))
 
     // 
 
@@ -235,7 +236,8 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     ///
 
     gameState.music = cast(dm.SoundHandle) dm.GetAsset("8-bit snel.flac")
-    dm.SetVolume(gameState.music, 0.3)
+    // dm.SetVolume(gameState.music, 0.3)
+    dm.SetVolume(gameState.music, 0)
 }
 
 ResetGame :: proc() {
@@ -446,7 +448,7 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
 
                 idx := rand.uint32() % len(HitSoundsNames)
                 sound := cast(dm.SoundHandle) dm.GetAsset(fmt.tprintf("hit %v", idx))
-                // fmt.println(idx, sound)
+                fmt.println(idx, sound)
 
                 camSize := dm.GetCameraSize(dm.renderCtx.camera)
 
@@ -558,7 +560,7 @@ GameRender : dm.GameRender : proc(state: rawptr) {
             }
 
             dm.DrawSprite(sprite, pos, color = color)
-            dm.DrawSprite(gameState.mollyHandsSprite, HolePositions[i] + {0, 0.2}, color = color)
+            dm.DrawSprite(gameState.mollyHandsSprite, HolePositions[i] + {0, 0.15}, color = color)
         }
     }
 
@@ -604,6 +606,12 @@ GameRender : dm.GameRender : proc(state: rawptr) {
     }
 
     dm.UpdateAndDrawParticleSystem(&gameState.saltParticles)
+
+    dm.BeginPP()
+    dm.DrawPP(gameState.blurPP)
+    dm.DrawPP(gameState.crtPP)
+    dm.DrawPP(gameState.vignettePP)
+    dm.FinishPP()
 
     // dm.DrawGrid()
 }

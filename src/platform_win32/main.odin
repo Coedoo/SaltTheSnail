@@ -42,7 +42,24 @@ SetWindowSize :: proc(width, height: int) {
     sdl.SetWindowPosition(window, pos.x - delta.x, pos.y - delta.y)
 
     sdl.SetWindowSize(window, i32(width), i32(height))
-    dm.ResizeFramebuffer(engineData.renderCtx, width, height)
+
+    if engineData.renderCtx.screenRenderTarget != nil {
+        engineData.renderCtx.screenRenderTarget->Release()
+    }
+
+    engineData.renderCtx.swapchain->ResizeBuffers(0, cast(u32) width, cast(u32) height, .UNKNOWN, nil)
+
+    screenBuffer: ^d3d11.ITexture2D
+    engineData.renderCtx.swapchain->GetBuffer(0, d3d11.ITexture2D_UUID, (^rawptr)(&screenBuffer))
+
+    engineData.renderCtx.device->CreateRenderTargetView(screenBuffer, nil, &engineData.renderCtx.screenRenderTarget)
+    screenBuffer->Release()
+
+    dm.ResizeFramebuffer(engineData.renderCtx, engineData.renderCtx.ppFramebufferSrc)
+    dm.ResizeFramebuffer(engineData.renderCtx, engineData.renderCtx.ppFramebufferDest)
+
+
+    // dm.ResizeFramebuffer(engineData.renderCtx, width, height)
 }
 
 main :: proc() {

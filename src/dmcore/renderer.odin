@@ -23,16 +23,19 @@ RenderContext :: struct {
 
     commandBuffer: CommandBuffer,
 
-    textures:    ResourcePool(Texture, TexHandle),
-    shaders:     ResourcePool(Shader, ShaderHandle),
-    buffers:     ResourcePool(GPUBuffer, GPUBufferHandle),
-    fonts:       ResourcePool(Font, FontHandle),
-    postProcess: ResourcePool(PostProcess, PPHandle),
+    textures:     ResourcePool(Texture, TexHandle),
+    shaders:      ResourcePool(Shader, ShaderHandle),
+    buffers:      ResourcePool(GPUBuffer, GPUBufferHandle),
+    fonts:        ResourcePool(Font, FontHandle),
+    framebuffers: ResourcePool(Framebuffer, FramebufferHandle),
 
     defaultShaders: [DefaultShaderType]ShaderHandle,
 
     uniformArena: mem.Arena,
     uniformAllocator: mem.Allocator,
+
+    ppFramebufferSrc:  FramebufferHandle,
+    ppFramebufferDest: FramebufferHandle,
 
     camera: Camera,
 
@@ -58,7 +61,7 @@ InitRenderContext :: proc(ctx: ^RenderContext) -> ^RenderContext {
     InitResourcePool(&ctx.shaders, 64)
     InitResourcePool(&ctx.buffers, 64)
     InitResourcePool(&ctx.fonts, 4)
-    InitResourcePool(&ctx.postProcess, 4)
+    InitResourcePool(&ctx.framebuffers, 16)
 
     // Batches
     InitRectBatch(ctx, &ctx.defaultBatch, 1024)
@@ -80,6 +83,10 @@ InitRenderContext :: proc(ctx: ^RenderContext) -> ^RenderContext {
     uniformMem := make([]byte, UNIFORM_MEM)
     mem.arena_init(&ctx.uniformArena, uniformMem)
     ctx.uniformAllocator = mem.arena_allocator(&ctx.uniformArena)
+
+    // framebuffers
+    ctx.ppFramebufferSrc  = CreateFramebuffer(ctx)
+    ctx.ppFramebufferDest = CreateFramebuffer(ctx)
 
     // Default assets
     texData := []u8{255, 255, 255, 255}

@@ -21,7 +21,16 @@ Command :: union {
     BeginScreenSpaceCommand,
     EndScreenSpaceCommand,
 
-    // SetShaderDataCommand,
+    BindFBAsTextureCommand,
+    BindRenderTargetCommand,
+
+    BeginPPCommand,
+    FinishPPCommand,
+    DrawPPCommand,
+
+    BindBufferCommand,
+
+    UpdateBufferContentCommand,
 }
 
 ClearColorCommand :: struct {
@@ -68,6 +77,31 @@ SetShaderDataCommand :: struct {
 
 BeginScreenSpaceCommand :: struct {}
 EndScreenSpaceCommand :: struct {}
+
+BindFBAsTextureCommand :: struct {
+    framebuffer: FramebufferHandle,
+    slot: int,
+}
+
+BindRenderTargetCommand :: struct {
+    framebuffer: FramebufferHandle,
+}
+
+BeginPPCommand :: struct{}
+FinishPPCommand :: struct{}
+
+DrawPPCommand :: struct {
+    shader: ShaderHandle,
+}
+
+UpdateBufferContentCommand :: struct {
+    buffer: GPUBufferHandle,
+}
+
+BindBufferCommand :: struct {
+    buffer: GPUBufferHandle,
+    slot: int,
+}
 
 ClearColor :: proc(color: color) {
     ClearColorCtx(renderCtx, color)
@@ -279,21 +313,6 @@ PopShader :: proc() {
     append(&renderCtx.commandBuffer.commands, PopShaderCommand{})
 }
 
-SetShaderData :: proc(slot: int, data: any) {
-    info := type_info_of(data.id)
-
-    copiedDataPtr, err := mem.alloc(info.size, info.align, renderCtx.uniformAllocator)
-    mem.copy(copiedDataPtr, data.data, info.size)
-
-    // fmt.println(any{copiedDataPtr, data.id})
-
-    // append(&renderCtx.commandBuffer.commands, SetShaderDataCommand{
-    //     slot,
-    //     copiedDataPtr,
-    //     info.size,
-    // })
-}
-
 BeginScreenSpace :: proc() {
     append(&renderCtx.commandBuffer.commands, BeginScreenSpaceCommand{})
     renderCtx.inScreenSpace = true
@@ -306,4 +325,61 @@ EndScreenSpace :: proc() {
     // TODO: cameras stack or something
     SetCamera(renderCtx.camera)
     renderCtx.inScreenSpace = false
+}
+
+UpdateBufferContent :: proc(buffer: GPUBufferHandle) {
+    cmd := UpdateBufferContentCommand {
+        buffer = buffer
+    }
+
+    append(&renderCtx.commandBuffer.commands, cmd)
+}
+
+BindBuffer :: proc(buffer: GPUBufferHandle, slot: int) {
+    cmd := BindBufferCommand {
+        buffer = buffer,
+        slot = slot,
+    }
+
+    append(&renderCtx.commandBuffer.commands, cmd)
+}
+
+BindFramebufferAsTexture :: proc(framebuffer: FramebufferHandle, slot: int) {
+    cmd := BindFBAsTextureCommand {
+        framebuffer = framebuffer,
+        slot = slot,
+    }
+
+    append(&renderCtx.commandBuffer.commands, cmd)
+}
+
+BindRenderTarget :: proc(framebuffer: FramebufferHandle) {
+    cmd := BindRenderTargetCommand {
+        framebuffer = framebuffer,
+    }
+
+    append(&renderCtx.commandBuffer.commands, cmd)
+}
+
+BeginPP :: proc() {
+    cmd := BeginPPCommand{}
+    append(&renderCtx.commandBuffer.commands, cmd)
+}
+
+FinishPP :: proc() {
+    cmd := FinishPPCommand{}
+
+    append(&renderCtx.commandBuffer.commands, cmd)
+}
+
+DrawPP :: proc(pp: PostProcess) {
+    cmd := DrawPPCommand {
+        shader = pp.shader
+    }
+
+    if pp.uniformBuffer != {} {
+        BindBuffer(pp.uniformBuffer, 1)
+    }
+
+    append(&renderCtx.commandBuffer.commands, cmd)
 }

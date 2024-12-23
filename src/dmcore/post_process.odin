@@ -1,38 +1,39 @@
 package dmcore
 
-PPHandle :: Handle
-
 PostProcessGlobalData :: struct #align(16) {
     resolution: iv2,
     time: f32,
 }
 
 PostProcess :: struct {
-    handle: PPHandle,
-
-    isActive: bool,
-    isDirty: bool,
-
     uniformBuffer: GPUBufferHandle,
     shader: ShaderHandle,
 }
 
-CreatePostProcess :: proc(shader: ShaderHandle, uniformData: any = nil) -> PPHandle {
-    pp := CreateElement(&renderCtx.postProcess)
+CreatePostProcess :: proc(shader: ShaderHandle, uniformData: any = nil) -> PostProcess {
+    pp: PostProcess
     pp.shader = shader
-    pp.isActive = true
 
     if uniformData != nil {
         pp.uniformBuffer = CreateGPUBuffer(uniformData)
-        pp.isDirty = true
+        UpdateBufferContent(pp.uniformBuffer)
     }
 
-    return pp.handle
+    return pp
 }
 
-PostProcessUpdateData :: proc(pp: PPHandle) {
-    ptr, ok := GetElementPtr(renderCtx.postProcess, pp)
-    if ok {
-        ptr.isDirty = true
-    }
-}
+
+
+// BloomPostPorcess :: proc(bloom: Bloom) {
+    // PreparePostPorcess()
+
+    // SetRT(bloom.horizontalRT)
+    // DrawPP(bloom.horizontalShader)
+
+    // SetTexture(bloom.horizonatalRT)
+    // SetRT(bloom.verticalRT)
+    // DrawPP(bloom.verticalShader)
+
+    // SetTexture(bloom.verticalRT)
+    // FinishPostProcess()
+// }
