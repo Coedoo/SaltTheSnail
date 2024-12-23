@@ -1,5 +1,21 @@
 package dmcore
 
+// SHADER
+DefaultShaderType :: enum {
+    Blit,
+    Sprite,
+    ScreenSpaceRect,
+    SDFFont,
+    Grid,
+}
+
+Shader :: struct {
+    handle: ShaderHandle,
+    name: string,
+    using backend: _Shader,
+}
+
+
 // FRAME BUFFER
 
 FramebufferHandle :: Handle
