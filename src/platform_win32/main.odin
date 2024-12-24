@@ -57,9 +57,6 @@ SetWindowSize :: proc(width, height: int) {
 
     dm.ResizeFramebuffer(engineData.renderCtx, engineData.renderCtx.ppFramebufferSrc)
     dm.ResizeFramebuffer(engineData.renderCtx, engineData.renderCtx.ppFramebufferDest)
-
-
-    // dm.ResizeFramebuffer(engineData.renderCtx, width, height)
 }
 
 main :: proc() {

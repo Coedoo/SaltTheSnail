@@ -1,9 +1,10 @@
 #if defined(VERTEX)
 precision mediump float;
 
-
-
-////////////
+layout(std140) uniform globalUniforms {
+    vec2 resolution;
+    float time;
+};
 
 out vec2 uv;
 
@@ -27,8 +28,19 @@ out vec4 FragColor;
 uniform sampler2D tex;
 
 void main() {
-    vec4 col = texture(tex, uv);
-    FragColor = col;
+    const float innerRadius = 0.7;
+    const float outerRadius = 1.6;
+
+    vec3 col = texture(tex, uv).rgb;
+    col = pow(col, vec3(2.2));
+
+    vec2 p = uv * 2.0 - 1.0;
+    float v = 1.0 - smoothstep(innerRadius, outerRadius, length(p));
+
+    col *= v;
+    col = pow(col, vec3(1.0 / 2.2));
+
+    FragColor = vec4(col, 1.0);
 }
 
 #endif

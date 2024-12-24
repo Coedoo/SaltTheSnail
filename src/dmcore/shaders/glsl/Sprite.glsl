@@ -42,7 +42,7 @@ void main() {
     // 0 - for world space (Y up)
     // 1 - for screen space (Y down)
     vec4 texUVS[2] = vec4[2](
-        vec4(aTexPos, aTexPos + aTexSize),
+        vec4(aTexPos + 0.5, aTexPos + aTexSize - 0.5),
         vec4(aTexPos.x, aTexPos.y + aTexSize.y, aTexPos.x + aTexSize.x, aTexPos.y)
     );
 

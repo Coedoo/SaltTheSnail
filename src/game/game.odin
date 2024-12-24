@@ -152,6 +152,11 @@ PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
         dm.RegisterAsset("Blur.hlsl", dm.ShaderAssetDescriptor{}, key = "Blur")
         dm.RegisterAsset("Vignette.hlsl", dm.ShaderAssetDescriptor{}, key = "Vignette")
     }
+    else when ODIN_OS == .JS {
+        dm.RegisterAsset("PPEffect.glsl", dm.ShaderAssetDescriptor{}, key = "PPEffect")
+        dm.RegisterAsset("Vignette.glsl", dm.ShaderAssetDescriptor{}, key = "Vignette")
+        dm.RegisterAsset("Blur.glsl", dm.ShaderAssetDescriptor{}, key = "Blur")
+    }
 
 
     for name, i in HitSoundsNames {
@@ -205,7 +210,8 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     gameState.btnPressedSprite = dm.CreateSprite(assetsTex, dm.RectInt{40, 20, 20, 20})
     gameState.btnPressedSprite.scale = f32(gameState.btnPressedSprite.textureSize.x) / PixelsPerUnit
 
-    platform.renderCtx.camera.orthoSize = 5.5
+    platform.renderCtx.camera.orthoSize = 5.8
+    platform.renderCtx.camera.position = {0, 0.4, 1}
     platform.renderCtx.camera.aspect = f32(windowSize.x)/f32(windowSize.y)
 
     // gameState.font = dm.LoadFontSDF(platform.renderCtx, "../Assets/Kenney Pixel.ttf", 50)
@@ -236,8 +242,8 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     ///
 
     gameState.music = cast(dm.SoundHandle) dm.GetAsset("8-bit snel.flac")
-    // dm.SetVolume(gameState.music, 0.3)
-    dm.SetVolume(gameState.music, 0)
+    dm.SetVolume(gameState.music, 0.3)
+    // dm.SetVolume(gameState.music, 0)
 }
 
 ResetGame :: proc() {

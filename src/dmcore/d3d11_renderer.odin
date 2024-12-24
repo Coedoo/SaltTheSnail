@@ -413,8 +413,8 @@ FlushCommands :: proc(ctx: ^RenderContext) {
 
     ctx.deviceContext->VSSetShader(shader.vertexShader, nil, 0)
     ctx.deviceContext->PSSetShader(shader.pixelShader, nil, 0);
-    ppDest := GetElement(ctx.framebuffers, ctx.ppFramebufferSrc)
-    ctx.deviceContext->PSSetShaderResources(0, 1, &ppDest.textureView)
+    ppSrc := GetElement(ctx.framebuffers, ctx.ppFramebufferSrc)
+    ctx.deviceContext->PSSetShaderResources(0, 1, &ppSrc.textureView)
     ctx.deviceContext->PSSetSamplers(0, 1, &ctx.ppTextureSampler)
 
     ctx.deviceContext->Draw(4, 0)

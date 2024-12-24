@@ -36,6 +36,9 @@ SetWindowSize :: proc(width, height: int) {
     engineData.renderCtx.frameSize.y = i32(height)
 
     SetCanvasSize(width, height)
+
+    dm.ResizeFramebuffer(engineData.renderCtx, engineData.renderCtx.ppFramebufferSrc)
+    dm.ResizeFramebuffer(engineData.renderCtx, engineData.renderCtx.ppFramebufferDest)
 }
 
 FileLoadedCallback :: proc(data: []u8) {

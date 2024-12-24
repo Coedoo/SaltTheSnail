@@ -287,7 +287,7 @@ class WebGLInterface {
 			SetCurrentContextById: (name_ptr, name_len) => {
 				let name = this.mem.loadString(name_ptr, name_len);
 				let element = getElement(name);
-				return this.setCurrentContext(element, {alpha: false, antialias: true, depth: true, premultipliedAlpha: true});
+				return this.setCurrentContext(element, {alpha: false, antialias: true, depth: true, premultipliedAlpha: false});
 			},
 			CreateCurrentContextById: (name_ptr, name_len, attributes) => {
 				let name = this.mem.loadString(name_ptr, name_len);
