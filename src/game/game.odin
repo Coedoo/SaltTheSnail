@@ -463,7 +463,9 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
                 // fmt.println(idx, sound)
                 
                 camSize := dm.GetCameraSize(dm.renderCtx.camera)
-                dm.SetPan(sound, hole.targetPos.x / camSize.x * (gameState.flipActive ? -1 : 1))
+                panStrength :: 0.6
+                panValue := panStrength * hole.targetPos.x / (camSize.x * 0.5) * (gameState.flipActive ? -1 : 1)
+                dm.SetPan(sound, panValue)
                 dm.SetVolume(sound, 0.4)
                 dm.PlaySound(sound)
 
@@ -536,7 +538,7 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
 
         sound := cast(dm.SoundHandle) dm.GetAsset(fmt.tprintf("ending%v.wav", idx))
         dm.SetDelay(sound, 0.6)
-        dm.SetVolume(sound, 0.5)
+        dm.SetVolume(sound, 0.4)
         dm.PlaySound(sound)
         ResetGame()
     }

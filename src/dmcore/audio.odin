@@ -6,6 +6,7 @@ Sound :: struct {
 
     _volume: f32,
     _looping: bool,
+    pan: f32,
     delay: f32,
 
     using backend: SoundBackend,

@@ -90,15 +90,19 @@ class WebAudioInterface {
                 })
             },
 
-            Play: (key, volume, delay) => {
+            Play: (key, volume, pan, delay) => {
                 if(this.sounds.has(key)) {
                     let gainNode = this.audioCtx.createGain();
                     gainNode.gain.value = volume;
-                    // gainNode.connect(this.audioCtx.destination);
+
+                    let panNode = this.audioCtx.createStereoPanner();
+                    panNode.pan.value = pan;
 
                     let src = this.audioCtx.createBufferSource();
                     src.buffer = this.sounds.get(key);
+
                     src.connect(gainNode)
+                       .connect(panNode)
                        .connect(this.audioCtx.destination);
                     
                     let time = this.audioCtx.currentTime + delay;
