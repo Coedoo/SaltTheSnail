@@ -7,7 +7,8 @@ import "core:strings"
 foreign import audio "audio"
 foreign audio {
     Load :: proc "c" (dataPtr: rawptr, dataLen: int) ---
-    Play :: proc "c" (dataPtr: rawptr, volume: f32) ---
+    Play :: proc "c" (dataPtr: rawptr, volume: f32, delay: f32) ---
+    Stop :: proc "c" (dataPtr: rawptr) ---
 }
 
 
@@ -38,7 +39,7 @@ _LoadSoundFromMemory :: proc(audio: ^Audio, data: []u8) -> SoundHandle {
 
 _PlaySound :: proc(audio: ^Audio, handle: SoundHandle) {
     sound, ok := GetElementPtr(audio.sounds, handle)
-    Play(sound.ptr, sound._volume)
+    Play(sound.ptr, sound._volume, sound.delay)
 }
 
 _SetVolume :: proc(sound: ^Sound, volume: f32) {
@@ -53,6 +54,8 @@ _SetLooping :: proc(sound: ^Sound, looping: bool) {
 
 
 _StopSound :: proc(audio: ^Audio, handle: SoundHandle) {
+    sound, ok := GetElementPtr(audio.sounds, handle)
+    Stop(sound.ptr)
 }
 
 _SetPan :: proc(audio: ^Sound, value: f32) {

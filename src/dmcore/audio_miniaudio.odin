@@ -81,7 +81,12 @@ _PlaySound :: proc(audio: ^Audio, handle: SoundHandle) {
         return
     }
 
-    ma.sound_seek_to_pcm_frame(&sound.maSound, 0) 
+    if(sound.delay != 0) {
+        currentTime := ma.engine_get_time_in_milliseconds(&audio.engine)
+        ma.sound_set_start_time_in_milliseconds(&sound.maSound, currentTime + u64(sound.delay * 1000))
+    }
+
+    ma.sound_seek_to_pcm_frame(&sound.maSound, 0)
     ma.sound_start(&sound.maSound)
 }
 

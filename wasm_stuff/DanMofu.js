@@ -70,6 +70,7 @@ class WebAudioInterface {
         this.audioCtx = new AudioContext();
 
         this.sounds = new Map();
+        this.playingSounds = new Map();
     }
 
 
@@ -89,7 +90,7 @@ class WebAudioInterface {
                 })
             },
 
-            Play: (key, volume) => {
+            Play: (key, volume, delay) => {
                 if(this.sounds.has(key)) {
                     let gainNode = this.audioCtx.createGain();
                     gainNode.gain.value = volume;
@@ -99,12 +100,23 @@ class WebAudioInterface {
                     src.buffer = this.sounds.get(key);
                     src.connect(gainNode)
                        .connect(this.audioCtx.destination);
-                    src.start();
+                    
+                    let time = this.audioCtx.currentTime + delay;
+                    src.start(time);
+
+                    this.playingSounds.set(key, src);
                 }
                 else {
                     console.error("Sound doesn't exists in dictionary");
                 }
             },
+
+            Stop: (key) => {
+                let sound = this.playingSounds.get(key);
+                if(sound !== undefined) {
+                    sound.stop();
+                }
+            }
 
         }
     }

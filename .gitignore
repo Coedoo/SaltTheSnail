@@ -1,6 +1,7 @@
 build
 build_web
 local
+asset_source
 
 *.dll
 *.exe

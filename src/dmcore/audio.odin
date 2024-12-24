@@ -6,6 +6,7 @@ Sound :: struct {
 
     _volume: f32,
     _looping: bool,
+    delay: f32,
 
     using backend: SoundBackend,
 }
@@ -95,4 +96,13 @@ SetPan :: proc(handle: SoundHandle, value: f32) {
     }
 
     _SetPan(sound, value)
+}
+
+SetDelay :: proc(handle: SoundHandle, value: f32) {
+    sound, ok := GetElementPtr(audio.sounds, handle)
+    if ok == false {
+        return
+    }
+
+    sound.delay = value
 }

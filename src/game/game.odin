@@ -95,7 +95,7 @@ HoleData :: struct {
 }
 
 HolePositions := [HolesCount]v2{
-    {0, 0},
+    {0, .7},
     { 1.5, -0.2},
     {-1.5, -0.2},
 
@@ -161,6 +161,10 @@ PreGameLoad : dm.PreGameLoad : proc(assets: ^dm.Assets) {
 
     for name, i in HitSoundsNames {
         dm.RegisterAsset(name, dm.SoundAssetDescriptor{}, key = fmt.tprintf("hit %v", i))
+    }
+
+    for i in 1..=5 {
+        dm.RegisterAsset(fmt.tprintf("ending%v.wav", i), dm.SoundAssetDescriptor{})
     }
 
     // dm.RegisterAsset("orange hit hard 12.wav", dm.SoundAssetDescriptor{})
@@ -452,12 +456,13 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
                     additionalSpeed = cast(v2) glsl.normalize(s.end - s.start) * 5
                 )
 
+
+
                 idx := rand.uint32() % len(HitSoundsNames)
                 sound := cast(dm.SoundHandle) dm.GetAsset(fmt.tprintf("hit %v", idx))
-                fmt.println(idx, sound)
-
+                // fmt.println(idx, sound)
+                
                 camSize := dm.GetCameraSize(dm.renderCtx.camera)
-
                 dm.SetPan(sound, hole.targetPos.x / camSize.x * (gameState.flipActive ? -1 : 1))
                 dm.SetVolume(sound, 0.4)
                 dm.PlaySound(sound)
@@ -526,6 +531,13 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
 
     if gameState.timeLeft < 0 {
         gameState.timeLeft = 0
+
+        idx := rand.uint32() % 5 + 1
+
+        sound := cast(dm.SoundHandle) dm.GetAsset(fmt.tprintf("ending%v.wav", idx))
+        dm.SetDelay(sound, 0.6)
+        dm.SetVolume(sound, 0.5)
+        dm.PlaySound(sound)
         ResetGame()
     }
 }
