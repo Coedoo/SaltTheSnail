@@ -14,8 +14,6 @@ robocopy ..\lib . /s > nul
 for %%a in (%*) do set "%%a=1"
 
 set flags="-vet-shadowing"
-rem set flags=""
-
 if "%release%" == "1" (
     echo RELEASE
     set flags=%flags% -o:speed -subsystem:windows 
@@ -30,7 +28,9 @@ if not "%only_game%"=="1" (
     odin build ..\src\platform_win32 %flags% -out:%exe_name%
 )
 
-odin build ..\src\game -build-mode=dll -out="Game.dll" %flags%
+if %errorlevel% == 0 (
+    odin build ..\src\game -build-mode=dll -out="Game.dll" %flags%
+)
 
 if "%run%" == "1" if %errorlevel% == 0 if %game_running% == false (
     %exe_name%

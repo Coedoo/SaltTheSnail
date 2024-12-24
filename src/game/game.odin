@@ -26,6 +26,7 @@ GameState :: struct {
     saltSprite: dm.Sprite,
     btnSprite: dm.Sprite,
     btnPressedSprite: dm.Sprite,
+    flipBtnSprite: dm.Sprite,
 
     font: dm.FontHandle,
 
@@ -213,6 +214,8 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     gameState.btnSprite.scale = f32(gameState.btnSprite.textureSize.x) / PixelsPerUnit
     gameState.btnPressedSprite = dm.CreateSprite(assetsTex, dm.RectInt{40, 20, 20, 20})
     gameState.btnPressedSprite.scale = f32(gameState.btnPressedSprite.textureSize.x) / PixelsPerUnit
+    gameState.flipBtnSprite = dm.CreateSprite(assetsTex, dm.RectInt{60, 20, 20, 20})
+    gameState.flipBtnSprite.scale = f32(gameState.btnPressedSprite.textureSize.x) / PixelsPerUnit
 
     platform.renderCtx.camera.orthoSize = 5.8
     platform.renderCtx.camera.position = {0, 0.4, 1}
@@ -246,7 +249,7 @@ GameLoad : dm.GameLoad : proc(platform: ^dm.Platform) {
     ///
 
     gameState.music = cast(dm.SoundHandle) dm.GetAsset("8-bit snel.flac")
-    dm.SetVolume(gameState.music, 0.3)
+    dm.SetVolume(gameState.music, 0.2)
     // dm.SetVolume(gameState.music, 0)
 }
 
@@ -474,7 +477,8 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
 
         }
         else {
-            s.speed += v2{0, -20} * dm.time.deltaTime
+            gravity := v2{0, -20} * (gameState.flipActive ? -1 : 1)
+            s.speed += gravity * dm.time.deltaTime
             s.position += s.speed * dm.time.deltaTime
 
             if dm.IsInsideCamera(dm.renderCtx.camera, s.position, gameState.saltSprite) == false {
@@ -594,7 +598,7 @@ GameRender : dm.GameRender : proc(state: rawptr) {
     dm.DrawSprite(
         (gameState.flipBtnPressed || gameState.flipAvailble == false ? 
             gameState.btnPressedSprite : 
-            gameState.btnSprite),
+            gameState.flipBtnSprite),
         FlipButtonPos
     )
 

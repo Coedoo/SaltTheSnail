@@ -77,8 +77,8 @@ FlushCommands :: proc(ctx: ^RenderContext) {
             gl.Clear(gl.COLOR_BUFFER_BIT)
 
         case CameraCommand:
-            view := GetViewMatrix(cmd.camera)
-            proj := GetProjectionMatrixNTO(cmd.camera)
+            view = GetViewMatrix(cmd.camera)
+            proj = GetProjectionMatrixNTO(cmd.camera)
 
             frameData.VPMat = proj * view
             frameData.invVPMat = glsl.inverse(frameData.VPMat)
