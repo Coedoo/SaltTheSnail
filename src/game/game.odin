@@ -260,10 +260,18 @@ ResetGame :: proc() {
         hole.state = .Dormant
     }
 
+    if gameState.flipActive {
+        gameState.flipAnimActive = true
+        gameState.flipAnimTimer = 0
+        gameState.flipAnimDir = -1
+    }
+
     gameState.flipAvailble = false
     gameState.flipActive = false
 
     gameState.saltParticles.gravity.y = -abs(gameState.saltParticles.gravity.y)
+
+
 
     // dm.StopSound(gameState.music)
 
@@ -347,6 +355,22 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
 
     startButtonPressed := HandleButton(&gameState.startBtnPressed, StartButtonPos, mouse)
 
+    if gameState.flipAnimActive {
+        gameState.flipAnimTimer += dm.time.deltaTime
+        if gameState.flipAnimTimer >= FlipAnimTime {
+            gameState.flipAnimActive = false
+            gameState.flipAnimTimer = FlipAnimTime
+        }
+
+        p := gameState.flipAnimTimer / FlipAnimTime
+        if gameState.flipAnimDir == 1 {
+            dm.renderCtx.camera.rotation = p * 180
+        }
+        else {
+            dm.renderCtx.camera.rotation = (1 - p) * 180
+        }
+    }
+
     if gameState.gameBegun == false {
         if startButtonPressed {
             StartGame()
@@ -357,7 +381,10 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
 
     if startButtonPressed {
         dm.StopSound(gameState.music)
+
         ResetGame()
+
+        return
     }
 
     gameState.timeLeft -= dm.time.deltaTime
@@ -519,22 +546,6 @@ GameUpdate : dm.GameUpdate : proc(state: rawptr) {
         }
     }
 
-    if gameState.flipAnimActive {
-        gameState.flipAnimTimer += dm.time.deltaTime
-        if gameState.flipAnimTimer >= FlipAnimTime {
-            gameState.flipAnimActive = false
-            gameState.flipAnimTimer = FlipAnimTime
-        }
-
-        p := gameState.flipAnimTimer / FlipAnimTime
-        if gameState.flipAnimDir == 1 {
-            dm.renderCtx.camera.rotation = p * 180
-        }
-        else {
-            dm.renderCtx.camera.rotation = (1 - p) * 180
-        }
-    }
-
     if gameState.timeLeft < 0 {
         gameState.timeLeft = 0
 
@@ -602,7 +613,8 @@ GameRender : dm.GameRender : proc(state: rawptr) {
         FlipButtonPos
     )
 
-    dm.DrawTextCentered(fmt.tprintf("%5v", gameState.score), {-1.5, 3.15}, gameState.font, fontSize = 0.9)
+    dm.DrawTextCentered("99999", {-1.5, 3.15}, gameState.font, fontSize = 0.9)
+    // dm.DrawTextCentered(fmt.tprintf("%5v", gameState.score), {-1.5, 3.15}, gameState.font, fontSize = 0.9)
     dm.DrawTextCentered(fmt.tprintf("%5.2f",gameState.timeLeft), {1.5, 3.15}, gameState.font, fontSize = 0.9)
 
 

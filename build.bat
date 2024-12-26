@@ -22,6 +22,7 @@ if "%release%" == "1" (
     rem set flags=%flags% -debug -o:none -use-separate-modules -lld -show-timings
 )
 
+set errorlevel=0
 if not "%only_game%"=="1" (
     echo "Building Platform"
     del %exe_name%
